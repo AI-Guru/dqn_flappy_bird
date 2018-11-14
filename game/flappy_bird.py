@@ -314,3 +314,7 @@ class GameState:
                 if hitmask1[x1+x][y1+y] and hitmask2[x2+x][y2+y]:
                     return True
         return False
+
+    def close(self):
+        pygame.display.quit()
+        pygame.quit()

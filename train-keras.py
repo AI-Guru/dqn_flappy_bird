@@ -1,8 +1,7 @@
-
-# Make then thing headless.
-# TODO put this into the game
-import os
-#os.putenv('SDL_VIDEODRIVER', 'dummy')
+import warnings
+warnings.filterwarnings("ignore")
+import matplotlib
+matplotlib.use("agg")
 
 from skimage import data, color
 from skimage.transform import rescale, resize, downscale_local_mean
@@ -10,66 +9,27 @@ import random
 import numpy as np
 import time
 from game.flappy_bird import GameState
-
 import sys
+
 import matplotlib.pyplot as plt
-
-from keras import models, layers, optimizers, initializers
-
-class Agent:
-
-    def __init__(self):
-        self.number_of_actions = 2
-        self.gamma = 0.99
-        self.final_epsilon = 0.0001
-        self.initial_epsilon = 0.1
-        self.number_of_iterations = 20000 #2000000
-        self.replay_memory_size = 10000
-        self.minibatch_size = 32
-
-        self.model = self.create_model()
-
-    def create_model(self):
-        kernel_initializer = initializers.RandomUniform(minval=-0.01, maxval=0.01, seed=None)
-        bias_initializer = initializers.Constant(value=0.01)
-
-        model = models.Sequential()
-        model.add(layers.Conv2D(32, (8, 8), strides=(4, 4), activation="relu", kernel_initializer=kernel_initializer, bias_initializer=bias_initializer, input_shape=(84, 84, 4)))
-        model.add(layers.Conv2D(64, (4, 4), strides=(2, 2), activation="relu", kernel_initializer=kernel_initializer, bias_initializer=bias_initializer))
-        model.add(layers.Conv2D(64, (3, 3), strides=(1, 1), activation="relu", kernel_initializer=kernel_initializer, bias_initializer=bias_initializer))
-        model.add(layers.Flatten())
-        model.add(layers.Dense(512, activation="relu", kernel_initializer=kernel_initializer, bias_initializer=bias_initializer))
-        model.add(layers.Dense(self.number_of_actions, activation="linear", kernel_initializer=kernel_initializer, bias_initializer=bias_initializer))
-        model.compile(
-            optimizer=optimizers.Adam(lr=1e-6),
-            loss="mse"
-        )
-        return model
-
-Agent().model.summary()
-
-def resize_and_bgr2gray(image):
-    image = image[0:288, 0:404]
-    image = color.rgb2gray(image)
-    image = resize(image, (84, 84), anti_aliasing=True)
-    image = np.reshape(image, (84, 84, 1))
-    image[image > 0] = 255
-    image = image.transpose(2, 0, 1)
-    image = image.astype(np.float32) / 255.0 # TODO division right?
-    return image
-
-def render_state(state):
-    for i in range(state.shape[-1]):
-        image_data = state[0,:,:, i]
-        print(image_data.shape)
-        plt.subplot(1, state.shape[-1], i + 1)
-        plt.imshow(image_data, cmap="gray")
-
-    plt.show()
-    plt.close()
+from agent import Agent
+import datetime
 
 
-def train(agent, game_state, start_time):
+def main():
+    print("Creating agent...")
+    agent = Agent()
+    agent.model.summary()
+
+    print("Creating game...")
+    game_state = GameState(headless=("headless" in sys.argv))
+
+    print("Training ...")
+    start_time = time.time()
+    train(agent, game_state, start_time, verbose="verbose" in sys.argv)
+
+
+def train(agent, game_state, start_time, verbose):
 
     # initialize replay memory
     replay_memory = []
@@ -93,13 +53,20 @@ def train(agent, game_state, start_time):
     rewards_array = np.zeros((running_mean_length, ))
     running_means = []
 
+    # Saving the model.
+    model_save_frequency = 100
+
     # initialize epsilon value
     epsilon = agent.initial_epsilon
     iteration = 0
     epsilon_decrements = np.linspace(agent.initial_epsilon, agent.final_epsilon, agent.number_of_iterations)
 
+    # Maximum q-values.
+    max_q_values = []
+
     # main infinite loop
-    for iteration in range(agent.number_of_iterations):
+    iterations = agent.number_of_iterations
+    for iteration in range(iterations):
 
         # Get an action. Either random or predicted. This is epsilon greedy exploration.
         epsilon = epsilon_decrements[iteration]
@@ -152,44 +119,79 @@ def train(agent, game_state, start_time):
         targets[:, np.argmax(action_batch, axis=1)] = reward_batch + agent.gamma * np.max(Q_sa, axis=1) * np.invert(terminal_batch)
         agent.model.train_on_batch(state_batch, targets)
 
+        # Processing running means.
         rewards_array[iteration % running_mean_length] = reward
         if iteration % running_mean_frequency == 0:
             running_means.append(np.mean(rewards_array))
 
+        # Processing q-values.
+        max_q_values.append(np.max(output))
+
         # Set state to next-state.
         state = state_next
+
+        # Saving the model.
+        if iteration % model_save_frequency == 0:
+            agent.model.save("model-{:08d}.h5".format(iteration))
 
         # Training output
         verbose = True
         if verbose:
+            elapsed_time = time.time() - start_time
+
+            estimated_time = iterations * elapsed_time / iteration - elapsed_time if iteration != 0 else 0.0
+
             status_string = ""
-            status_string += "Progress {:.02f}% ".format(100.0 * iteration / agent.number_of_iterations)
-            status_string += "time: {:.02f}s ".format(time.time() - start_time)
+            status_string += "Progress {:.02f}% ".format(100.0 * iteration / iterations)
+            status_string += "elapsed: {} ".format(str(datetime.timedelta(seconds=int(elapsed_time))))
+            status_string += "estimated: {} ".format(str(datetime.timedelta(seconds=int(estimated_time))))
             status_string += "epsilon: {:.04f} ".format(epsilon)
             status_string += "action: {} ".format(action)
             status_string += "random: {} ".format(do_random_action)
             status_string += "reward: {} ".format(reward)
             status_string += "q-max: {} ".format(np.max(output))
-            #print(status_string, end="\r")
-            print(status_string)
+            status_string += " " * 10
+            print(status_string, end="\r")
+            #print(status_string)
 
     print("")
-    print(len(running_means))
+
+    game_state.close()
+    print("Done!")
+
     plt.plot(running_means)
-    plt.save_fig("running_means.png")
-    #plt.show()
-    #plt.close()
+    plt.savefig("running_means.png")
+    plt.close()
+
+    plt.plot(max_q_values)
+    plt.savefig("max_q_values.png")
+    plt.close()
+
+    print("Really done!")
+
+
+def resize_and_bgr2gray(image):
+    image = image[0:288, 0:404]
+    image = color.rgb2gray(image)
+    image = resize(image, (84, 84), anti_aliasing=True)
+    image = np.reshape(image, (84, 84, 1))
+    image[image > 0] = 255
+    image = image.transpose(2, 0, 1)
+    image = image.astype(np.float32) / 255.0 # TODO division right?
+    return image
+
+
+def render_state(state):
+    for i in range(state.shape[-1]):
+        image_data = state[0,:,:, i]
+        print(image_data.shape)
+        plt.subplot(1, state.shape[-1], i + 1)
+        plt.imshow(image_data, cmap="gray")
+
+    plt.show()
+    plt.close()
+
+
 
 if __name__ == "__main__":
-
-    print("Creating agent...")
-    agent = Agent()
-
-    print("Creating game...")
-    game_state = GameState(headless=("headless" in sys.argv))
-
-    print("Training ...")
-    start_time = time.time()
-    train(agent, game_state, start_time)
-
-    vdisplay.stop()
+    main()

@@ -184,8 +184,13 @@ def train(agent, game_state, start_time):
 
 if __name__ == "__main__":
 
+    print("Creating agent...")
     agent = Agent()
-    game_state = GameState(headless="headless" in sys.argv)
+
+    print("Creating game...")
+    game_state = GameState(headless=("headless" in sys.argv))
+
+    print("Training ...")
     start_time = time.time()
     train(agent, game_state, start_time)
 

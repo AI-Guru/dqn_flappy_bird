@@ -8,9 +8,6 @@ from skimage import data, color
 from skimage.transform import rescale, resize, downscale_local_mean
 import random
 import numpy as np
-import torch
-import torch.nn as nn
-import torch.optim as optim
 import time
 from game.flappy_bird import GameState
 

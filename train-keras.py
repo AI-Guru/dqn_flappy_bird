@@ -173,7 +173,8 @@ def train(agent, game_state, start_time):
             status_string += "random: {} ".format(do_random_action)
             status_string += "reward: {} ".format(reward)
             status_string += "q-max: {} ".format(np.max(output))
-            print(status_string, end="\r")
+            #print(status_string, end="\r")
+            print(status_string)
 
     print("")
     print(len(running_means))

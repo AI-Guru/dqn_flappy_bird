@@ -9,7 +9,7 @@ class GameState:
     def __init__(self, headless=False):
 
         self.headless = headless
-        if headless == True:
+        if self.headless == True:
             os.putenv('SDL_VIDEODRIVER', 'dummy')
 
         self.FPS = 99999999999999999999#30
@@ -18,7 +18,12 @@ class GameState:
         self.SCREENHEIGHT = 512
 
         pygame.init()
-        self.SCREEN = pygame.display.set_mode((self.SCREENWIDTH, self.SCREENHEIGHT))
+
+        if self.headless == False:
+            self.SCREEN = pygame.display.set_mode((self.SCREENWIDTH, self.SCREENHEIGHT))
+        else:
+            self.SCREEN = pygame.display.set_mode((1, 1))
+
         self.OFFSCREEN = pygame.Surface((self.SCREENWIDTH, self.SCREENHEIGHT), flags=4, depth=32)
 
         #SCREEN = pygame.display.set_mode((1, 1))

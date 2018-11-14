@@ -72,10 +72,7 @@ def render_state(state):
     plt.close()
 
 
-def train(agent, start_time):
-
-    # instantiate game
-    game_state = GameState(headless=False)
+def train(agent, game_state, start_time):
 
     # initialize replay memory
     replay_memory = []
@@ -121,10 +118,8 @@ def train(agent, start_time):
         # Get next state and reward
         image_data_next, reward, terminal = game_state.frame_step(action)
         #import scipy.misc
-        #print(image_data_next.shape)
         #scipy.misc.imsave('outfile{}.jpg'.format(iteration), image_data_next)
         image_data_next = resize_and_bgr2gray(image_data_next)
-        #scipy.misc.imsave('outfile-bw.png', image_data_next)
 
         #state_1 = torch.cat((state.squeeze(0)[1:, :, :], image_data_1)).unsqueeze(0)
         state_next = np.zeros((84, 84, 4))
@@ -187,8 +182,11 @@ def train(agent, start_time):
     #plt.show()
     #plt.close()
 
-agent = Agent()
-start_time = time.time()
-train(agent, start_time)
+if __name__ == "__main__":
 
-vdisplay.stop()
+    agent = Agent()
+    game_state = GameState(headless="headless" in sys.argv)
+    start_time = time.time()
+    train(agent, game_state, start_time)
+
+    vdisplay.stop()

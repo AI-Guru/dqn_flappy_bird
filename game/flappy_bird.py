@@ -86,7 +86,11 @@ SCREENHEIGHT = 512
 pygame.init()
 FPSCLOCK = pygame.time.Clock()
 SCREEN = pygame.display.set_mode((SCREENWIDTH, SCREENHEIGHT))
-pygame.display.set_caption('Flappy Bird')
+OFFSCREEN = pygame.Surface((SCREENWIDTH, SCREENHEIGHT), flags=4, depth=32)
+
+
+#SCREEN = pygame.display.set_mode((1, 1))
+#pygame.display.set_caption('Flappy Bird')
 
 IMAGES, HITMASKS = load()
 PIPEGAPSIZE = 100 # gap between upper and lower part of pipe
@@ -194,20 +198,25 @@ class GameState:
             reward = -1
 
         # draw sprites
-        SCREEN.blit(IMAGES['background'], (0,0))
+        OFFSCREEN.blit(IMAGES['background'], (0,0))
 
         for uPipe, lPipe in zip(self.upperPipes, self.lowerPipes):
-            SCREEN.blit(IMAGES['pipe'][0], (uPipe['x'], uPipe['y']))
-            SCREEN.blit(IMAGES['pipe'][1], (lPipe['x'], lPipe['y']))
+            OFFSCREEN.blit(IMAGES['pipe'][0], (uPipe['x'], uPipe['y']))
+            OFFSCREEN.blit(IMAGES['pipe'][1], (lPipe['x'], lPipe['y']))
 
-        SCREEN.blit(IMAGES['base'], (self.basex, BASEY))
+        OFFSCREEN.blit(IMAGES['base'], (self.basex, BASEY))
         # print score so player overlaps the score
         # showScore(self.score)
-        SCREEN.blit(IMAGES['player'][self.playerIndex],
+        OFFSCREEN.blit(IMAGES['player'][self.playerIndex],
                     (self.playerx, self.playery))
 
-        image_data = pygame.surfarray.array3d(pygame.display.get_surface())
+        image_data = pygame.surfarray.array3d(OFFSCREEN)
+        #image_data = pygame.surfarray.array3d(pygame.display.get_surface())
+
+
+        SCREEN.blit(OFFSCREEN, (0, 0))
         pygame.display.update()
+
         FPSCLOCK.tick(FPS)
         return image_data, reward, terminal
 
@@ -239,7 +248,7 @@ def showScore(score):
     Xoffset = (SCREENWIDTH - totalWidth) / 2
 
     for digit in scoreDigits:
-        SCREEN.blit(IMAGES['numbers'][digit], (Xoffset, SCREENHEIGHT * 0.1))
+        OFFSCREEN.blit(IMAGES['numbers'][digit], (Xoffset, SCREENHEIGHT * 0.1))
         Xoffset += IMAGES['numbers'][digit].get_width()
 
 
@@ -292,4 +301,3 @@ def pixelCollision(rect1, rect2, hitmask1, hitmask2):
             if hitmask1[x1+x][y1+y] and hitmask2[x2+x][y2+y]:
                 return True
     return False
-

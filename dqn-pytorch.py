@@ -1,4 +1,6 @@
-import cv2
+from skimage import data, color
+from skimage.transform import rescale, resize, downscale_local_mean
+
 import random
 import numpy as np
 
@@ -69,10 +71,14 @@ def image_to_tensor(image):
 
 def resize_and_bgr2gray(image):
     image = image[0:288, 0:404]
-    image_data = cv2.cvtColor(cv2.resize(image, (84, 84)), cv2.COLOR_BGR2GRAY)
-    image_data[image_data > 0] = 255
-    image_data = np.reshape(image_data, (84, 84, 1))
-    return image_data
+    image = color.rgb2gray(image)
+    image = resize(image, (84, 84), anti_aliasing=True)
+    image = np.reshape(image, (84, 84, 1))
+    return image
+    #image_data = cv2.cvtColor(cv2.resize(image, (84, 84)), cv2.COLOR_BGR2GRAY)
+    #image_data[image_data > 0] = 255
+    #image_data = np.reshape(image_data, (84, 84, 1))
+    #return image_data
 
 
 def train(model, start):

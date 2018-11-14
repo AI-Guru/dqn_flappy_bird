@@ -156,18 +156,9 @@ def train(agent, start_time):
 
         # Do gradient descent.
         targets = agent.model.predict(state_batch)
-        #print("targets:", targets)
-
         Q_sa = agent.model.predict(state_next_batch)
-        #print("Q_sa:   ", Q_sa)
-        #print("argmax: ", np.argmax(action_batch, axis=1))
-
         targets[:, np.argmax(action_batch, axis=1)] = reward_batch + agent.gamma * np.max(Q_sa, axis=1) * np.invert(terminal_batch)
-        #print("reward_batch", reward_batch)
-        #print("targets:", targets)
-
         agent.model.train_on_batch(state_batch, targets)
-        #print("")
 
         rewards_array[iteration % running_mean_length] = reward
         if iteration % running_mean_frequency == 0:
@@ -192,8 +183,9 @@ def train(agent, start_time):
     print("")
     print(len(running_means))
     plt.plot(running_means)
-    plt.show()
-    plt.close()
+    plt.save_fig("running_means.png")
+    #plt.show()
+    #plt.close()
 
 agent = Agent()
 start_time = time.time()

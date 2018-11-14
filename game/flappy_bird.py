@@ -3,7 +3,7 @@ import pygame
 from itertools import cycle
 
 
-def load():
+def load_assets():
     # path of player with different states
     PLAYER_PATH = (
             'assets/sprites/redbird-upflap.png',
@@ -80,11 +80,11 @@ def getHitmask(image):
 
 
 FPS = 99999999999999999999#30
+FPSCLOCK = pygame.time.Clock()
 SCREENWIDTH  = 288
 SCREENHEIGHT = 512
 
 pygame.init()
-FPSCLOCK = pygame.time.Clock()
 SCREEN = pygame.display.set_mode((SCREENWIDTH, SCREENHEIGHT))
 OFFSCREEN = pygame.Surface((SCREENWIDTH, SCREENHEIGHT), flags=4, depth=32)
 
@@ -92,7 +92,7 @@ OFFSCREEN = pygame.Surface((SCREENWIDTH, SCREENHEIGHT), flags=4, depth=32)
 #SCREEN = pygame.display.set_mode((1, 1))
 #pygame.display.set_caption('Flappy Bird')
 
-IMAGES, HITMASKS = load()
+#IMAGES, HITMASKS = load_assets()
 PIPEGAPSIZE = 100 # gap between upper and lower part of pipe
 BASEY = SCREENHEIGHT * 0.79
 

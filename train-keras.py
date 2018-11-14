@@ -75,7 +75,7 @@ def render_state(state):
 def train(agent, start_time):
 
     # instantiate game
-    game_state = GameState()
+    game_state = GameState(headless=False)
 
     # initialize replay memory
     replay_memory = []

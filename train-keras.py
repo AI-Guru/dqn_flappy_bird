@@ -1,6 +1,7 @@
 import warnings
 warnings.filterwarnings("ignore")
-
+import matplotlib
+matplotlib.use("agg")
 import random
 import numpy as np
 import time
@@ -123,7 +124,7 @@ def train(agent, environment, start_time, verbose):
         state = state_next
 
         # Saving the model wrt. frequency or on last iteration.
-        if iteration % model_save_frequency == 0 or iteration = iterations -1:
+        if iteration % model_save_frequency == 0 or iteration == iterations -1:
             agent.model.save("model-{:08d}.h5".format(iteration))
 
             plt.plot(running_means)

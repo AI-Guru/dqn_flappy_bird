@@ -34,11 +34,7 @@ def train(agent, environment, start_time, verbose):
     action = np.array([1.0, 0.0])
     image_data, reward, terminal = environment.frame_step(action)
     image_data = utils.resize_and_bgr2gray(image_data)
-    state = np.zeros((84, 84, 4))
-    state[:,:,0] = image_data
-    state[:,:,1] = image_data
-    state[:,:,2] = image_data
-    state[:,:,3] = image_data
+    state = utils.image_data_to_state(image_data)
 
     # Initialize running means.
     running_mean_length = 1000
@@ -74,27 +70,13 @@ def train(agent, environment, start_time, verbose):
 
         # Get next state and reward
         image_data_next, reward, terminal = environment.frame_step(action)
-        #import scipy.misc
-        #scipy.misc.imsave('outfile{}.jpg'.format(iteration), image_data_next)
         image_data_next = utils.resize_and_bgr2gray(image_data_next)
-
-        #state_1 = torch.cat((state.squeeze(0)[1:, :, :], image_data_1)).unsqueeze(0)
-        state_next = np.zeros((84, 84, 4))
-        state_next[:,:,0] = state[:,:,1]
-        state_next[:,:,1] = state[:,:,2]
-        state_next[:,:,2] = state[:,:,3]
-        state_next[:,:,3] = image_data_next
-        #render_state(state_1)
-
-        #reward = np.array([reward], dtype=np.float32)
-        #reward = torch.from_numpy(np.array([reward], dtype=np.float32)).unsqueeze(0)
+        state_next = utils.update_state(state, image_data_next)
 
         # Save transition to replay memory and ensure length.
         replay_memory.append((state, action, reward, state_next, terminal))
         if len(replay_memory) > agent.replay_memory_size:
             replay_memory.pop(0)
-
-        #print("replay_memory", len(replay_memory))
 
         # sample random minibatch
         minibatch = random.sample(replay_memory, min(len(replay_memory), agent.minibatch_size))
@@ -109,7 +91,20 @@ def train(agent, environment, start_time, verbose):
         # Do gradient descent.
         targets = agent.model.predict(state_batch)
         Q_sa = agent.model.predict(state_next_batch)
-        targets[:, np.argmax(action_batch, axis=1)] = reward_batch + agent.gamma * np.max(Q_sa, axis=1) * np.invert(terminal_batch)
+
+        #targets_alt = targets.copy()
+        #Q_sa_alt = Q_sa.copy()
+
+        for i in range(len(minibatch)):
+            if terminal_batch[i] == False:
+                targets[i, np.argmax(action_batch[i])] = reward_batch[i] + agent.gamma * np.max(Q_sa[i])
+            else:
+                targets[i, np.argmax(action_batch[i])] = reward_batch[i]
+
+        #targets[:, np.argmax(action_batch, axis=1)] = reward_batch + agent.gamma * np.max(Q_sa, axis=1) * np.invert(terminal_batch)
+        #targets_alt[:, np.argmax(action_batch, axis=1)] = reward_batch + agent.gamma * np.max(Q_sa_alt, axis=1) * np.invert(terminal_batch)
+        #for index, (a, b) in enumerate(zip(targets, targets_alt)):
+    #        assert np.array_equal(a, b), str(a) + "\n" + str(b)
         agent.model.train_on_batch(state_batch, targets)
 
         # Processing running means.

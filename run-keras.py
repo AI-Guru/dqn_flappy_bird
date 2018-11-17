@@ -37,11 +37,7 @@ def run(model, environment, verbose):
         action = np.array([1.0, 0.0])
         image_data, reward, terminal = environment.frame_step(action)
         image_data = utils.resize_and_bgr2gray(image_data)
-        state = np.zeros((84, 84, 4))
-        state[:,:,0] = image_data
-        state[:,:,1] = image_data
-        state[:,:,2] = image_data
-        state[:,:,3] = image_data
+        state = utils.image_data_to_state(image_data)
 
         while terminal == False:
 
@@ -53,13 +49,7 @@ def run(model, environment, verbose):
 
             # Update state.
             image_data_next = utils.resize_and_bgr2gray(image_data_next)
-            state_next = np.zeros((84, 84, 4))
-            state_next[:,:,0] = state[:,:,1]
-            state_next[:,:,1] = state[:,:,2]
-            state_next[:,:,2] = state[:,:,3]
-            state_next[:,:,3] = image_data_next
-
-            state = state_next
+            state = utils.update_state(state, image_data_next)
 
 
 if __name__ == "__main__":

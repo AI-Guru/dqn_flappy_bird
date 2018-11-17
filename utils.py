@@ -16,10 +16,26 @@ def resize_and_bgr2gray(image):
     return image
 
 
+def image_data_to_state(image_data):
+    state = np.zeros((84, 84, 4))
+    state[:,:,0] = image_data
+    state[:,:,1] = image_data
+    state[:,:,2] = image_data
+    state[:,:,3] = image_data
+    return state
+
+def update_state(state, image_data_next):
+    state_next = np.zeros((84, 84, 4))
+    state_next[:,:,0] = state[:,:,1]
+    state_next[:,:,1] = state[:,:,2]
+    state_next[:,:,2] = state[:,:,3]
+    state_next[:,:,3] = image_data_next
+    return state_next
+
+
 def render_state(state):
     for i in range(state.shape[-1]):
-        image_data = state[0,:,:, i]
-        print(image_data.shape)
+        image_data = state[:,:, i]
         plt.subplot(1, state.shape[-1], i + 1)
         plt.imshow(image_data, cmap="gray")
 

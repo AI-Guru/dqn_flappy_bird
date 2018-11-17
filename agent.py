@@ -7,7 +7,7 @@ class Agent:
         self.gamma = 0.99
         self.final_epsilon = 0.0001
         self.initial_epsilon = 0.1
-        self.number_of_iterations = 2000000
+        self.number_of_iterations = 100000 # 2000000
         self.replay_memory_size = 10000
         self.minibatch_size = 32
 

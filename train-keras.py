@@ -1,20 +1,15 @@
 import warnings
 warnings.filterwarnings("ignore")
-import matplotlib
-matplotlib.use("agg")
 
-from skimage import data, color
-from skimage.transform import rescale, resize, downscale_local_mean
 import random
 import numpy as np
 import time
-from game.flappy_bird import GameState
+from game.flappy_bird import Environment
 import sys
-
 import matplotlib.pyplot as plt
 from agent import Agent
 import datetime
-
+import utils
 
 def main():
     print("Creating agent...")
@@ -22,25 +17,22 @@ def main():
     agent.model.summary()
 
     print("Creating game...")
-    game_state = GameState(headless=("headless" in sys.argv))
+    environment = Environment(headless=("headless" in sys.argv))
 
     print("Training ...")
     start_time = time.time()
-    train(agent, game_state, start_time, verbose="verbose" in sys.argv)
+    train(agent, environment, start_time, verbose="verbose" in sys.argv)
 
 
-def train(agent, game_state, start_time, verbose):
+def train(agent, environment, start_time, verbose):
 
     # initialize replay memory
     replay_memory = []
 
-    # initial action is do nothing
-    action = np.zeros((agent.number_of_actions,)).astype("float32")
-    action[0] = 1.0
-
     # Initialize state.
-    image_data, reward, terminal = game_state.frame_step(action)
-    image_data = resize_and_bgr2gray(image_data)
+    action = np.array([1.0, 0.0])
+    image_data, reward, terminal = environment.frame_step(action)
+    image_data = utils.resize_and_bgr2gray(image_data)
     state = np.zeros((84, 84, 4))
     state[:,:,0] = image_data
     state[:,:,1] = image_data
@@ -54,7 +46,7 @@ def train(agent, game_state, start_time, verbose):
     running_means = []
 
     # Saving the model.
-    model_save_frequency = 100
+    model_save_frequency = 100000
 
     # initialize epsilon value
     epsilon = agent.initial_epsilon
@@ -80,10 +72,10 @@ def train(agent, game_state, start_time, verbose):
         action[action_index] = 1.0
 
         # Get next state and reward
-        image_data_next, reward, terminal = game_state.frame_step(action)
+        image_data_next, reward, terminal = environment.frame_step(action)
         #import scipy.misc
         #scipy.misc.imsave('outfile{}.jpg'.format(iteration), image_data_next)
-        image_data_next = resize_and_bgr2gray(image_data_next)
+        image_data_next = utils.resize_and_bgr2gray(image_data_next)
 
         #state_1 = torch.cat((state.squeeze(0)[1:, :, :], image_data_1)).unsqueeze(0)
         state_next = np.zeros((84, 84, 4))
@@ -130,9 +122,17 @@ def train(agent, game_state, start_time, verbose):
         # Set state to next-state.
         state = state_next
 
-        # Saving the model.
-        if iteration % model_save_frequency == 0:
+        # Saving the model wrt. frequency or on last iteration.
+        if iteration % model_save_frequency == 0 or iteration = iterations -1:
             agent.model.save("model-{:08d}.h5".format(iteration))
+
+            plt.plot(running_means)
+            plt.savefig("running_means-{}.png".format(iteration))
+            plt.close()
+
+            plt.plot(max_q_values)
+            plt.savefig("max_q_values-{}.png".format(iteration))
+            plt.close()
 
         # Training output
         verbose = True
@@ -170,26 +170,6 @@ def train(agent, game_state, start_time, verbose):
     print("Really done!")
 
 
-def resize_and_bgr2gray(image):
-    image = image[0:288, 0:404]
-    image = color.rgb2gray(image)
-    image = resize(image, (84, 84), anti_aliasing=True)
-    image = np.reshape(image, (84, 84, 1))
-    image[image > 0] = 255
-    image = image.transpose(2, 0, 1)
-    image = image.astype(np.float32) / 255.0 # TODO division right?
-    return image
-
-
-def render_state(state):
-    for i in range(state.shape[-1]):
-        image_data = state[0,:,:, i]
-        print(image_data.shape)
-        plt.subplot(1, state.shape[-1], i + 1)
-        plt.imshow(image_data, cmap="gray")
-
-    plt.show()
-    plt.close()
 
 
 

@@ -4,7 +4,7 @@ from itertools import cycle
 import os
 
 
-class GameState:
+class Environment:
 
     def __init__(self, headless=False):
 

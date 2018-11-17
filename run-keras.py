@@ -1,21 +1,16 @@
 import warnings
 warnings.filterwarnings("ignore")
-
-#import random
 import numpy as np
-#import time
 from game.flappy_bird import Environment
 import sys
-#import matplotlib.pyplot as plt
-#from agent import Agent
-#import datetime
-import utils
+import flappybirdutils as utils
 import glob
 from keras import models
 
+
 def main():
     print("Loading model...")
-    if len(sys.argv) > 1:
+    if len(sys.argv) == 1:
         model_paths = sorted(glob.glob("*.h5"))
         model_path = model_paths[-1]
     else:

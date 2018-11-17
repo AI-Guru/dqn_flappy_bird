@@ -34,7 +34,6 @@ def main():
     environment = Environment(headless=("headless" in sys.argv))
 
     print("Training ...")
-
     train(agent, environment, verbose="verbose" in sys.argv)
 
 
@@ -42,7 +41,7 @@ def train(agent, environment, verbose):
 
     # Initialize state.
     action = np.array([1.0, 0.0])
-    image_data, reward, terminal = environment.frame_step(action)
+    image_data, reward, terminal = environment.step(action)
     image_data = utils.resize_and_bgr2gray(image_data)
     state = utils.image_data_to_state(image_data)
 
@@ -63,7 +62,7 @@ def train(agent, environment, verbose):
         action = agent.get_action(state)
 
         # Get next state and reward
-        image_data_next, reward, terminal = environment.frame_step(action)
+        image_data_next, reward, terminal = environment.step(action)
         image_data_next = utils.resize_and_bgr2gray(image_data_next)
         state_next = utils.update_state(state, image_data_next)
 

@@ -33,7 +33,7 @@ def run(model, environment, verbose):
 
         # Initialize.
         action = np.array([1.0, 0.0])
-        image_data, reward, terminal = environment.frame_step(action)
+        image_data, reward, terminal = environment.step(action)
         image_data = utils.resize_and_bgr2gray(image_data)
         state = utils.image_data_to_state(image_data)
 

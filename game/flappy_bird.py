@@ -146,7 +146,7 @@ class Environment:
         return mask
 
 
-    def frame_step(self, input_actions):
+    def step(self, input_actions):
         pygame.event.pump()
 
         reward = 0.1

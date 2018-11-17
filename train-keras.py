@@ -37,7 +37,7 @@ def train(agent, environment, start_time, verbose):
     state = utils.image_data_to_state(image_data)
 
     # Initialize running means.
-    running_mean_length = 1000
+    running_mean_length = 100
     running_mean_frequency = 100
     rewards_array = np.zeros((running_mean_length, ))
     running_means = []
@@ -131,13 +131,14 @@ def train(agent, environment, start_time, verbose):
             estimated_time = iterations * elapsed_time / iteration - elapsed_time if iteration != 0 else 0.0
 
             status_string = ""
-            status_string += "Progress {:.02f}% ".format(100.0 * iteration / iterations)
+            status_string += "{}/{} " .format(iteration, iterations)
+            status_string += "{:.02f}% ".format(100.0 * iteration / iterations)
             status_string += "elapsed: {} ".format(str(datetime.timedelta(seconds=int(elapsed_time))))
             status_string += "estimated: {} ".format(str(datetime.timedelta(seconds=int(estimated_time))))
-            status_string += "epsilon: {:.04f} ".format(epsilon)
+            #status_string += "epsilon: {:.04f} ".format(epsilon)
             status_string += "action: {} ".format(action)
-            status_string += "random: {} ".format(do_random_action)
-            status_string += "reward: {} ".format(reward)
+            #status_string += "random: {} ".format(do_random_action)
+            #status_string += "reward: {} ".format(reward)
             status_string += "q-max: {} ".format(np.max(output))
             status_string += " " * 10
             print(status_string, end="\r")

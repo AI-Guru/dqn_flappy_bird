@@ -91,10 +91,6 @@ def train(agent, environment, start_time, verbose):
         # Do gradient descent.
         targets = agent.model.predict(state_batch)
         Q_sa = agent.model.predict(state_next_batch)
-
-        #targets_alt = targets.copy()
-        #Q_sa_alt = Q_sa.copy()
-
         for i in range(len(minibatch)):
             if terminal_batch[i] == False:
                 targets[i, np.argmax(action_batch[i])] = reward_batch[i] + agent.gamma * np.max(Q_sa[i])
@@ -102,9 +98,6 @@ def train(agent, environment, start_time, verbose):
                 targets[i, np.argmax(action_batch[i])] = reward_batch[i]
 
         #targets[:, np.argmax(action_batch, axis=1)] = reward_batch + agent.gamma * np.max(Q_sa, axis=1) * np.invert(terminal_batch)
-        #targets_alt[:, np.argmax(action_batch, axis=1)] = reward_batch + agent.gamma * np.max(Q_sa_alt, axis=1) * np.invert(terminal_batch)
-        #for index, (a, b) in enumerate(zip(targets, targets_alt)):
-    #        assert np.array_equal(a, b), str(a) + "\n" + str(b)
         agent.model.train_on_batch(state_batch, targets)
 
         # Processing running means.
@@ -152,7 +145,7 @@ def train(agent, environment, start_time, verbose):
 
     print("")
 
-    game_state.close()
+    #game_state.close()
     print("Done!")
 
     plt.plot(running_means)

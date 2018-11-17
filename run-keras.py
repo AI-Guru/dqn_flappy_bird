@@ -15,8 +15,11 @@ from keras import models
 
 def main():
     print("Loading model...")
-    model_paths = sorted(glob.glob("*.h5"))
-    model_path = model_paths[-1]
+    if len(sys.argv) > 1:
+        model_paths = sorted(glob.glob("*.h5"))
+        model_path = model_paths[-1]
+    else:
+        model_path = sys.argv[1]
     model = models.load_model(model_path)
     print(model_path, "loaded.")
 

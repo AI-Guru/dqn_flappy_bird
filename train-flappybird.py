@@ -23,8 +23,7 @@ def main():
         gamma=0.99,
         final_epsilon=0.0001,
         initial_epsilon=0.1,
-        #number_of_iterations=2000000,
-        number_of_iterations=2000,
+        number_of_iterations=2000000,
         replay_memory_size=10000,
         minibatch_size=32
     )
@@ -81,14 +80,14 @@ def train(agent, environment, verbose):
 
         # Saving the model wrt. frequency or on last iteration.
         if iteration % model_save_frequency == 0 or iteration == iterations -1:
-            agent.model.save("model-{:08d}.h5".format(iteration + 1))
+            agent.model.save("flappybird-model-{:08d}.h5".format(iteration + 1))
 
             plt.plot(running_means)
-            plt.savefig("running_means-{}.png".format(iteration + 1))
+            plt.savefig("flappybird-running_means-{}.png".format(iteration + 1))
             plt.close()
 
             plt.plot(max_q_values)
-            plt.savefig("max_q_values-{}.png".format(iteration+ 1))
+            plt.savefig("flappybird-max_q_values-{}.png".format(iteration+ 1))
             plt.close()
 
         # Training output

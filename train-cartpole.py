@@ -31,7 +31,7 @@ def main():
     agent.enable_running_means_tracking(100)
 
     print("Creating game...")
-    environment = gym.make('CartPole-v0')
+    environment = gym.make("CartPole-v0")
 
     print("Training ...")
     train(agent, environment, verbose="verbose" in sys.argv, headless="headless" in sys.argv)
@@ -50,9 +50,6 @@ def create_model():
 
 def train(agent, environment, verbose, headless):
 
-    # Initialize state.
-    state = environment.reset()
-
     # Saving the model.
     model_save_frequency = 100000
 
@@ -61,10 +58,14 @@ def train(agent, environment, verbose, headless):
     max_q_values = []
     episode_length_means = []
     episode_length_maximums = []
+    observation_absolute_maximums = np.array([2.4, 3.6, 0.27, 3.3])
+
+    # Initialize state.
+    state = environment.reset()
+    state = state / observation_absolute_maximums
 
     # main infinite loop
     iterations = agent.number_of_iterations
-
     episode_length = 0
     episode_lengths = [0]
     episode_length_maximum = 0
@@ -78,6 +79,7 @@ def train(agent, environment, verbose, headless):
 
         # Get next state and reward
         state_next, reward, terminal, _ = environment.step(np.argmax(action))
+        state_next = state_next / observation_absolute_maximums
 
         # Save transition to replay memory and ensure length.
         agent.memorize_transition(state, action, reward, state_next, terminal)

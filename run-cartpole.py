@@ -5,12 +5,12 @@ import gym
 import sys
 import glob
 from keras import models
-
+import os
 
 def main():
     print("Loading model...")
     if len(sys.argv) == 1:
-        model_paths = glob.glob("*.h5")
+        model_paths = glob.glob(os.path.join("pretrained_models", "*.h5"))
         model_paths = [model_path for model_path in model_paths if "cartpole" in model_path]
         model_paths = sorted(model_paths)
         model_path = model_paths[-1]

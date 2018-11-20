@@ -45,10 +45,11 @@ def main():
             minibatch_size=32,
             model_copy_interval=100
         )
-
-    agent.enable_rewards_tracking(rewards_running_mean_length=100)
-    agent.enable_episodes_tracking(episodes_running_mean_length=100)
+    agent.enable_rewards_tracking(rewards_running_means_length=100)
+    agent.enable_episodes_tracking(episodes_running_means_length=100)
+    agent.enable_maxq_tracking(maxq_running_means_length=100)
     agent.enable_model_saving(model_save_frequency=100000)
+    agent.enable_plots_saving(plots_save_frequency=100000)
 
     print("Creating game...")
     environment = Environment(headless=("headless" in sys.argv))
@@ -65,13 +66,7 @@ def train(agent, environment, verbose):
     image_data = utils.resize_and_bgr2gray(image_data)
     state = utils.image_data_to_state(image_data)
 
-    # Initialize running means.
-    running_means = []
-
-    # Maximum q-values.
-    max_q_values = []
-
-    # main infinite loop
+    # Main loop.
     iterations = agent.number_of_iterations
     for iteration in range(iterations):
 
@@ -85,10 +80,6 @@ def train(agent, environment, verbose):
 
         # Save transition to replay memory and ensure length.
         agent.memorize_transition(state, action, reward, state_next, terminal)
-
-        # Update statistics.
-        running_means.append(agent.current_running_means)
-        max_q_values.append(agent.current_max_q_value)
 
         # Replay the memory.
         agent.replay_memory_via_minibatch()

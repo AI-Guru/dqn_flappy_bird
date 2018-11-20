@@ -4,7 +4,7 @@ import time
 import datetime
 
 
-class Agent:
+class DQNAgent:
 
     def __init__(self, model, number_of_actions, gamma, final_epsilon, initial_epsilon, number_of_iterations, replay_memory_size, minibatch_size):
         self.model = model

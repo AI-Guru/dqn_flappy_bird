@@ -7,17 +7,19 @@ import numpy as np
 from game.flappy_bird import Environment
 import sys
 import matplotlib.pyplot as plt
-from agent import Agent
+from agent import DQNAgent
 import flappybirdutils as utils
+import modelutils
+
 
 def main():
 
     print("Creating model...")
-    model = utils.create_model()
+    model = modelutils.create_model()
     model.summary()
 
     print("Creating agent...")
-    agent = Agent(
+    agent = DQNAgent(
         model=model,
         number_of_actions=2,
         gamma=0.99,

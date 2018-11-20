@@ -7,7 +7,7 @@ import numpy as np
 import gym
 import sys
 import matplotlib.pyplot as plt
-from agent import Agent
+from agent import DQNAgent
 from keras import models, layers, optimizers, initializers
 
 
@@ -18,7 +18,7 @@ def main():
     model.summary()
 
     print("Creating agent...")
-    agent = Agent(
+    agent = DQNAgent(
         model=model,
         number_of_actions=2,
         gamma=0.95,

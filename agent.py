@@ -52,7 +52,8 @@ class DQNAgent:
         self.track_rewards = False
         self.track_episodes = False
         self.track_maxq = False
-        self.save_model = False
+        self.save_model_automatically = False
+        self.save_plots_automatically = False
 
 
     def enable_rewards_tracking(self, rewards_running_means_length):
@@ -115,7 +116,7 @@ class DQNAgent:
             model_save_frequency (int): Frequency for saving the model automatically.
         """
 
-        self.save_model = True
+        self.save_model_automatically = True
         self.model_save_frequency = model_save_frequency
 
 
@@ -127,7 +128,7 @@ class DQNAgent:
             plots_save_frequency (int): Frequency for plotting the values automatically.
         """
 
-        self.plots_saving = True
+        self.save_plots_automatically = True
         self.plots_save_frequency = plots_save_frequency
 
 
@@ -247,11 +248,11 @@ class DQNAgent:
         self.model.train_on_batch(state_batch, q_values)
 
         # Save the model if configured.
-        if self.save_model == True:
+        if self.save_model_automatically == True:
             self.save_model_if_enabled()
 
         # Save the plots if configured.
-        if self.plots_saving == True:
+        if self.save_plots_automatically == True:
             self.save_plots_if_enabled()
 
 
@@ -403,25 +404,9 @@ class DDQNAgent(DQNAgent):
             self.target_model.set_weights(self.model.get_weights())
 
         # Save the model if configured.
-        if self.save_model == True:
+        if self.save_model_automatically == True:
             self.save_model_if_enabled()
 
         # Save the plots if configured.
-        if self.plots_saving == True:
+        if self.save_plots_automatically == True:
             self.save_plots_if_enabled()
-
-
-    def save_model(self, path):
-        """
-        See super-class.
-        """
-
-        self.target_model.save(path)
-
-
-    def predict_on_state(self, state):
-        """
-        See super-class.
-        """
-
-        return self.target_model.predict(np.expand_dims(state, axis=0))[0]

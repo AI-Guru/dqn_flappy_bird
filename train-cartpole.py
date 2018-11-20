@@ -19,6 +19,7 @@ def main():
 
     print("Creating agent...")
     agent = DQNAgent(
+        name="cartpole",
         model=model,
         number_of_actions=2,
         gamma=0.95,
@@ -28,7 +29,11 @@ def main():
         replay_memory_size=2000,
         minibatch_size=32
     )
-    agent.enable_running_means_tracking(100)
+    agent.enable_rewards_tracking(rewards_running_means_length=100)
+    agent.enable_episodes_tracking(episodes_running_means_length=100)
+    agent.enable_maxq_tracking(maxq_running_means_length=100)
+    agent.enable_model_saving(model_save_frequency=10000)
+    agent.enable_plots_saving(plots_save_frequency=10000)
 
     print("Creating game...")
     environment = gym.make("CartPole-v0")
@@ -50,14 +55,7 @@ def create_model():
 
 def train(agent, environment, verbose, headless):
 
-    # Saving the model.
-    model_save_frequency = 100000
-
-    # Statistics.
-    running_means = []
-    max_q_values = []
-    episode_length_means = []
-    episode_length_maximums = []
+    # Normalization.
     observation_absolute_maximums = np.array([2.4, 3.6, 0.27, 3.3])
 
     # Initialize state.
@@ -66,9 +64,6 @@ def train(agent, environment, verbose, headless):
 
     # main infinite loop
     iterations = agent.number_of_iterations
-    episode_length = 0
-    episode_lengths = [0]
-    episode_length_maximum = 0
     for iteration in range(iterations):
 
         if headless == False:
@@ -84,56 +79,20 @@ def train(agent, environment, verbose, headless):
         # Save transition to replay memory and ensure length.
         agent.memorize_transition(state, action, reward, state_next, terminal)
 
-        # Update statistics.
-        running_means.append(agent.current_running_means)
-        max_q_values.append(agent.current_max_q_value)
-
         # Replay the memory.
         agent.replay_memory_via_minibatch()
 
         # Set state to next-state.
         state = state_next
-        episode_length += 1
 
+        # Restart environment if episode is over.
         if terminal == True:
-            episode_lengths.append(episode_length)
-            if len(episode_lengths) > 100:
-                episode_lengths.pop(0)
-            episode_length_maximum = max(episode_length_maximum, episode_length)
-            episode_length = 0
             state = environment.reset()
-
-        # Update statistics.
-        episode_length_mean = np.mean(episode_lengths)
-        episode_length_means.append(episode_length_mean)
-        episode_length_maximums.append(episode_length_maximum)
-
-        # Saving the model wrt. frequency or on last iteration.
-        if iteration % model_save_frequency == 0 or iteration == iterations -1:
-            agent.model.save("cartpole-model-{:08d}.h5".format(iteration + 1))
-
-            plt.plot(running_means)
-            plt.savefig("cartpole-running_means-{}.png".format(iteration + 1))
-            plt.close()
-
-            plt.plot(max_q_values)
-            plt.savefig("cartpole-max_q_values-{}.png".format(iteration+ 1))
-            plt.close()
-
-            plt.plot(episode_length_means)
-            plt.savefig("cartpole-episode_length_means-{}.png".format(iteration+ 1))
-            plt.close()
-
-            plt.plot(episode_length_maximums)
-            plt.savefig("cartpole-episode_length_maximums-{}.png".format(iteration+ 1))
-            plt.close()
 
         # Training output
         verbose = True
         if verbose:
             status_string = ""
-            status_string += "mean: {:.01f} max: {:.01f} ".format(episode_length_mean, episode_length_maximum)
-
             status_string += agent.get_status_string()
             print(status_string, end="\r")
 

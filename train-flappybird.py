@@ -7,7 +7,7 @@ import numpy as np
 from game.flappy_bird import Environment
 import sys
 import matplotlib.pyplot as plt
-from agent import DQNAgent
+from agent import DQNAgent, DDQNAgent
 import flappybirdutils as utils
 import modelutils
 
@@ -19,17 +19,36 @@ def main():
     model.summary()
 
     print("Creating agent...")
-    agent = DQNAgent(
-        model=model,
-        number_of_actions=2,
-        gamma=0.99,
-        final_epsilon=0.0001,
-        initial_epsilon=0.1,
-        number_of_iterations=2000000,
-        replay_memory_size=10000,
-        minibatch_size=32
-    )
-    agent.enable_running_means_tracking(100)
+    agent_type = "ddqn"
+    if agent_type == "dqn":
+        agent = DQNAgent(
+            name="flappybird-dqn",
+            model=model,
+            number_of_actions=2,
+            gamma=0.99,
+            final_epsilon=0.0001,
+            initial_epsilon=0.1,
+            number_of_iterations=2000000,
+            replay_memory_size=10000,
+            minibatch_size=32
+        )
+    elif agent_type == "ddqn":
+        agent = DDQNAgent(
+            name="flappybird-ddqn",
+            model=model,
+            number_of_actions=2,
+            gamma=0.99,
+            final_epsilon=0.0001,
+            initial_epsilon=0.1,
+            number_of_iterations=2000000,
+            replay_memory_size=10000,
+            minibatch_size=32,
+            model_copy_interval=100
+        )
+
+    agent.enable_rewards_tracking(rewards_running_mean_length=100)
+    agent.enable_episodes_tracking(episodes_running_mean_length=100)
+    agent.enable_model_saving(model_save_frequency=100000)
 
     print("Creating game...")
     environment = Environment(headless=("headless" in sys.argv))
@@ -45,9 +64,6 @@ def train(agent, environment, verbose):
     image_data, reward, terminal = environment.step(action)
     image_data = utils.resize_and_bgr2gray(image_data)
     state = utils.image_data_to_state(image_data)
-
-    # Saving the model.
-    model_save_frequency = 100000
 
     # Initialize running means.
     running_means = []
@@ -79,18 +95,6 @@ def train(agent, environment, verbose):
 
         # Set state to next-state.
         state = state_next
-
-        # Saving the model wrt. frequency or on last iteration.
-        if iteration % model_save_frequency == 0 or iteration == iterations -1:
-            agent.model.save("flappybird-model-{:08d}.h5".format(iteration + 1))
-
-            plt.plot(running_means)
-            plt.savefig("flappybird-running_means-{}.png".format(iteration + 1))
-            plt.close()
-
-            plt.plot(max_q_values)
-            plt.savefig("flappybird-max_q_values-{}.png".format(iteration+ 1))
-            plt.close()
 
         # Training output
         verbose = True

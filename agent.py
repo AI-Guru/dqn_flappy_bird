@@ -9,8 +9,9 @@ import matplotlib.pyplot as plt
 class DQNAgent:
     """
     This is the implementation of an DQN-Agent.
-    It allows for doing deep reinforcement learning.
-    It also does minibatch-replay against catastrophic forgetting.
+
+    It allows for doing deep reinforcement learning. It also does
+    minibatch-replay against catastrophic forgetting.
     """
 
     def __init__(self, name, model, number_of_actions, gamma, final_epsilon, initial_epsilon, number_of_iterations, replay_memory_size, minibatch_size):
@@ -163,6 +164,22 @@ class DQNAgent:
 
 
     def memorize_transition(self, state, action, reward, state_next, terminal):
+        """
+        Stores a transition in memory.
+
+        This is necessary for minibatch-replay. Also keeps track of statistics
+        if enabled.
+
+        A bit longer description.
+
+        Args:
+            state (ndarray): The current state of the environment.
+            action (nd.array): One-hot encoded action.
+            reward (float): Reward from the environment base on the action.
+            state_next (ndarray): The next state of the environment.
+            terminal (boolean): Denotes if the state is terminal or not.
+        """
+
         self.replay_memory.append((state, action, reward, state_next, terminal))
         if len(self.replay_memory) > self.replay_memory_size:
             self.replay_memory.pop(0)
@@ -191,6 +208,7 @@ class DQNAgent:
                 if self.current_iteration % self.episodes_running_means_length == 0:
                     self.episodes_running_means_array_for_plot.append(self.current_episodes_running_means)
 
+        # Tracking max-q values.
         if self.track_maxq == True:
             self.maxq_array.append(self.current_maxq_value)
             if len(self.maxq_array) > self.maxq_running_means_length:
@@ -201,6 +219,12 @@ class DQNAgent:
 
 
     def replay_memory_via_minibatch(self):
+        """
+        Replays memory in one minibatch.
+
+        Used to prevent catastrophic forgetting. Also saves model and plots,
+        if previously activated.
+        """
 
         # Sample random minibatch and unpack it.
         minibatch = random.sample(self.replay_memory, min(len(self.replay_memory), self.minibatch_size))
@@ -232,17 +256,30 @@ class DQNAgent:
 
 
     def save_model_if_enabled(self):
+        """
+        Saves the model automatically if enabled.
+        """
+
         # Saving the model wrt. frequency or on last iteration.
         if self.current_iteration % self.model_save_frequency == 0 or self.current_iteration == self.number_of_iterations - 1:
             self.save_model("{}-model-{:08d}.h5".format(self.name, self.current_iteration + 1))
 
 
     def save_model(self, path):
+        """
+        Saves the model to a path.
+
+        Args:
+            path (string): Where to save the model.
+        """
+
         self.model.save(path)
 
 
     def save_plots_if_enabled(self):
-        # Saving the model wrt. frequency or on last iteration.
+        """
+        Saves the plots automatically if enabled.
+        """
         if self.current_iteration % self.plots_save_frequency == 0 or self.current_iteration == self.number_of_iterations - 1:
 
             if self.track_rewards:
@@ -261,13 +298,29 @@ class DQNAgent:
                 plt.close()
 
 
-
-
     def predict_on_state(self, state):
-        return self.model.predict(np.expand_dims(state, axis=0))
+        """
+        Performs one prediction on a state.
+
+        Args:
+            state (ndarray): A state of the environment.
+
+        Returns:
+            ndarray: A prediction.
+        """
+
+        return self.model.predict(np.expand_dims(state, axis=0))[0]
 
 
     def get_status_string(self):
+        """
+        Yields a status string.
+
+        The string contains all data relevant to training.
+
+        Returns:
+            string: The status string.
+        """
 
         elapsed_time = time.time() - self.start_time
         estimated_time = self.number_of_iterations * elapsed_time / self.current_iteration - elapsed_time if self.current_iteration != 0 else 0.0
@@ -293,8 +346,25 @@ class DQNAgent:
 
 
 class DDQNAgent(DQNAgent):
+    """
+    This is the implementation of an DDQN-Agent.
+
+    It allows for doing deep reinforcement learning. It also does
+    minibatch-replay against catastrophic forgetting. On top of that it makes
+    heavy use of a target net in order to make the solution more stable
+    """
 
     def __init__(self, name, model, number_of_actions, gamma, final_epsilon, initial_epsilon, number_of_iterations, replay_memory_size, minibatch_size, model_copy_interval):
+        """
+        Creates a DDQN-agent.
+
+
+        Args:
+            See constructor of super-class.
+
+            model_copy_interval (int): Interval of how often to copy the weights.
+        """
+
         super().__init__(name, model, number_of_actions, gamma, final_epsilon, initial_epsilon, number_of_iterations, replay_memory_size, minibatch_size)
 
         self.model_copy_interval = model_copy_interval
@@ -302,6 +372,9 @@ class DDQNAgent(DQNAgent):
 
 
     def replay_memory_via_minibatch(self):
+        """
+        See super-class.
+        """
 
         # Sample random minibatch and unpack it.
         minibatch = random.sample(self.replay_memory, min(len(self.replay_memory), self.minibatch_size))
@@ -339,8 +412,16 @@ class DDQNAgent(DQNAgent):
 
 
     def save_model(self, path):
+        """
+        See super-class.
+        """
+
         self.target_model.save(path)
 
 
     def predict_on_state(self, state):
-        return self.target_model.predict(np.expand_dims(state, axis=0))
+        """
+        See super-class.
+        """
+
+        return self.target_model.predict(np.expand_dims(state, axis=0))[0]

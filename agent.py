@@ -332,10 +332,10 @@ class DQNAgent:
         status_string += "elapsed: {} ".format(str(datetime.timedelta(seconds=int(elapsed_time))))
         status_string += "estimated: {} ".format(str(datetime.timedelta(seconds=int(estimated_time))))
         status_string += "epsilon: {:.04f} ".format(self.current_epsilon)
-        status_string += "action: {} ".format(self.current_action)
+        #status_string += "action: {} ".format(self.current_action)
         #status_string += "random: {} ".format(do_random_action)
-        status_string += "reward: {} ".format(self.current_reward)
-        status_string += "maxq: {:.04f} ".format(self.current_maxq_value)
+        #status_string += "reward: {} ".format(self.current_reward)
+        #status_string += "maxq: {:.04f} ".format(self.current_maxq_value)
         if self.track_rewards:
             status_string += "rewards mean: {:.04f} ".format(self.current_rewards_running_means)
         if self.track_episodes:

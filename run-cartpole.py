@@ -21,6 +21,7 @@ def main():
 
     print("Creating environment...")
     environment = gym.make("CartPole-v0")
+    environment._max_episode_steps = 500
 
     print("Running ...")
     run(model, environment, verbose="verbose" in sys.argv)

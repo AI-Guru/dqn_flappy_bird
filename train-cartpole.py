@@ -11,14 +11,19 @@ from agent import DQNAgent, DDQNAgent
 from keras import models, layers, optimizers, initializers
 
 
+# Parameters.
+agent_type = "ddqn"
+compute_custom_rewards = True
+
+
 def main():
+
 
     print("Creating model...")
     model = create_model()
     model.summary()
 
     print("Creating agent...")
-    agent_type = "ddqn"
     if agent_type == "dqn":
         agent = DQNAgent(
             name="cartpole-dqn",
@@ -44,14 +49,15 @@ def main():
             minibatch_size=32,
             model_copy_interval=100
         )
-    agent.enable_rewards_tracking(rewards_running_means_length=100)
+    agent.enable_rewards_tracking(rewards_running_means_length=10000)
     agent.enable_episodes_tracking(episodes_running_means_length=100)
-    agent.enable_maxq_tracking(maxq_running_means_length=100)
+    agent.enable_maxq_tracking(maxq_running_means_length=10000)
     agent.enable_model_saving(model_save_frequency=10000)
     agent.enable_plots_saving(plots_save_frequency=10000)
 
     print("Creating game...")
     environment = gym.make("CartPole-v0")
+    environment._max_episode_steps = 500
 
     print("Training ...")
     train(agent, environment, verbose="verbose" in sys.argv, headless="headless" in sys.argv)
@@ -90,6 +96,13 @@ def train(agent, environment, verbose, headless):
         # Get next state and reward
         state_next, reward, terminal, _ = environment.step(np.argmax(action))
         state_next = state_next / observation_absolute_maximums
+
+        # Compute custom rewards.
+        if compute_custom_rewards == True:
+            if terminal == True:
+                reward = -100.0
+            elif np.max(np.abs(state_next)) > 0.5:
+                reward = -20.0
 
         # Save transition to replay memory and ensure length.
         agent.memorize_transition(state, action, reward, state_next, terminal)

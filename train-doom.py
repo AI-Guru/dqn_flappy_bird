@@ -17,7 +17,7 @@ action_none = [0, 0, 0]
 action_shoot = [0, 0, 1]
 action_left = [1, 0, 0]
 action_right = [0, 1, 0]
-actions = [action_shoot, action_left, action_right]
+actions = [action_none, action_shoot, action_left, action_right]
 action_length = len(actions)
 
 # Parameters.
@@ -27,7 +27,7 @@ agent_type = "ddqn"
 def main():
 
     print("Creating model...")
-    model = modelutils.create_model()
+    model = modelutils.create_model(number_of_actions=4)
     model.summary()
 
     print("Creating agent...")
@@ -47,7 +47,7 @@ def main():
         agent = DDQNAgent(
             name="doom-ddqn",
             model=model,
-            number_of_actions=2,
+            number_of_actions=4,
             gamma=0.99,
             final_epsilon=0.0001,
             initial_epsilon=0.1,
@@ -56,9 +56,9 @@ def main():
             minibatch_size=32,
             model_copy_interval=100
         )
-    agent.enable_rewards_tracking(rewards_running_means_length=100)
-    agent.enable_episodes_tracking(episodes_running_means_length=100)
-    agent.enable_maxq_tracking(maxq_running_means_length=100)
+    agent.enable_rewards_tracking(rewards_running_means_length=1000)
+    agent.enable_episodes_tracking(episodes_running_means_length=1000)
+    agent.enable_maxq_tracking(maxq_running_means_length=1000)
     agent.enable_model_saving(model_save_frequency=10000)
     agent.enable_plots_saving(plots_save_frequency=10000)
 

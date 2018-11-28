@@ -206,8 +206,8 @@ class DQNAgent:
                     self.episodes_lengths_array.pop(0)
                 self.current_episode_length = 0
                 self.current_episodes_running_means = np.mean(self.episodes_lengths_array)
-                if self.current_iteration % self.episodes_running_means_length == 0:
-                    self.episodes_running_means_array_for_plot.append(self.current_episodes_running_means)
+            if self.current_iteration % self.episodes_running_means_length == 0:
+                self.episodes_running_means_array_for_plot.append(self.current_episodes_running_means)
 
         # Tracking max-q values.
         if self.track_maxq == True:

@@ -10,7 +10,7 @@ import sys
 import matplotlib.pyplot as plt
 from agent import DQNAgent, DDQNAgent
 from keras import models, layers, optimizers, initializers
-import supermarioutils as utils
+import tetrisutils as utils
 import modelutils
 
 # Parameters.

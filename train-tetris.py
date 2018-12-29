@@ -33,7 +33,7 @@ def main():
             gamma=0.95,
             final_epsilon=0.01,
             initial_epsilon=1.0,
-            number_of_iterations=100000,
+            number_of_iterations=1000000,
             replay_memory_size=2000,
             minibatch_size=32
         )
@@ -45,7 +45,7 @@ def main():
             gamma=0.95,
             final_epsilon=0.01,
             initial_epsilon=1.0,
-            number_of_iterations=100000,
+            number_of_iterations=1000000,
             replay_memory_size=2000,
             minibatch_size=32,
             model_copy_interval=100

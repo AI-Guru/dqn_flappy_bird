@@ -5,8 +5,7 @@ matplotlib.use("agg")
 import random
 import numpy as np
 from nes_py.wrappers import BinarySpaceToDiscreteSpaceEnv
-import gym_super_mario_bros
-from gym_super_mario_bros.actions import SIMPLE_MOVEMENT
+import gym_tetris
 import sys
 import matplotlib.pyplot as plt
 from agent import DQNAgent, DDQNAgent
@@ -17,8 +16,7 @@ import modelutils
 # Parameters.
 agent_type = "ddqn"
 compute_custom_rewards = True
-actions = SIMPLE_MOVEMENT # TODO consider something else
-number_of_actions = len(actions)
+number_of_actions = 12
 
 def main():
 
@@ -29,25 +27,25 @@ def main():
     print("Creating agent...")
     if agent_type == "dqn":
         agent = DQNAgent(
-            name="supermario-dqn",
+            name="tetris-dqn",
             model=model,
             number_of_actions=number_of_actions,
             gamma=0.95,
             final_epsilon=0.01,
             initial_epsilon=1.0,
-            number_of_iterations=1000000,
+            number_of_iterations=100000,
             replay_memory_size=2000,
             minibatch_size=32
         )
     elif agent_type == "ddqn":
         agent = DDQNAgent(
-            name="supermario-ddqn",
+            name="tetris-ddqn",
             model=model,
             number_of_actions=number_of_actions,
             gamma=0.95,
             final_epsilon=0.01,
             initial_epsilon=1.0,
-            number_of_iterations=1000000,
+            number_of_iterations=100000,
             replay_memory_size=2000,
             minibatch_size=32,
             model_copy_interval=100
@@ -59,8 +57,8 @@ def main():
     agent.enable_plots_saving(plots_save_frequency=10000)
 
     print("Creating game...")
-    environment = gym_super_mario_bros.make("SuperMarioBros-v0")
-    environment = BinarySpaceToDiscreteSpaceEnv(environment, actions)
+    environment = gym_tetris.make('Tetris-v0')
+    #environment = BinarySpaceToDiscreteSpaceEnv(environment, actions)
 
     print("Training ...")
     train(agent, environment, verbose="verbose" in sys.argv, headless="headless" in sys.argv)
@@ -89,7 +87,7 @@ def train(agent, environment, verbose, headless):
 
         # Get next state and reward
         image_data_next, reward, terminal, _ = environment.step(action)
-        assert image_data_next.shape == (240, 256, 3), str(image_data_next.shape)
+        assert image_data_next.shape == (430, 330, 3), str(image_data_next.shape)
         image_data_next = utils.resize_and_bgr2gray(image_data_next)
         assert image_data_next.shape == (1, 84, 84), str(image_data_next.shape)
         state_next = utils.update_state(state, image_data_next)

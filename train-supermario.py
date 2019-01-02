@@ -95,13 +95,6 @@ def train(agent, environment, verbose, headless):
         state_next = utils.update_state(state, image_data_next)
         assert state_next.shape == (84, 84, 4), str(state_next.shape)
 
-        # Compute custom rewards.
-        if compute_custom_rewards == True:
-            if terminal == True:
-                reward = -100.0
-            elif np.max(np.abs(state_next)) > 0.5:
-                reward = -20.0
-
         # Save transition to replay memory and ensure length.
         agent.memorize_transition(state, action, reward, state_next, terminal)
 

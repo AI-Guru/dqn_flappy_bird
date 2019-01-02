@@ -410,3 +410,120 @@ class DDQNAgent(DQNAgent):
         # Save the plots if configured.
         if self.save_plots_automatically == True:
             self.save_plots_if_enabled()
+
+
+class DQNAgentSpecial(DQNAgent):
+    """
+    This is the implementation of an DDQN-Agent.
+
+    It allows for doing deep reinforcement learning. It also does
+    minibatch-replay against catastrophic forgetting. On top of that it makes
+    heavy use of a target net in order to make the solution more stable
+    """
+
+    def __init__(self, name, model, gamma, final_epsilon, initial_epsilon, number_of_iterations, replay_memory_size, minibatch_size, model_copy_interval):
+        """
+        Creates a DDQN-agent.
+
+
+        Args:
+            See constructor of super-class.
+
+            model_copy_interval (int): Interval of how often to copy the weights.
+        """
+
+        super().__init__(name=name, model=model, number_of_actions=0, gamma=gamma, final_epsilon=final_epsilon, initial_epsilon=initial_epsilon, number_of_iterations=number_of_iterations, replay_memory_size=replay_memory_size, minibatch_size=minibatch_size)
+
+        self.model_copy_interval = model_copy_interval
+
+        self.target_model = models.clone_model(self.model)
+
+        self.action_sizes = [int(output.shape[1]) for output in model.outputs]
+
+
+    def get_action(self, state):
+        """
+        Returns an action.
+
+        This implements epsilon greedy. That is, it returns with a certain probability
+        either a random action or a predicted action.
+
+        Args:
+            state (ndarray): A state of the environment.
+
+        Returns:
+            ndarray: A one-hot-encoded action.
+        """
+
+        self.current_epsilon = self.epsilon_decrements[self.current_iteration]
+
+        prediction = self.model.predict(np.expand_dims(state, axis=0))
+        self.current_maxq_value = np.max([np.max(p) for p in prediction])
+
+        do_random_action = random.random() <= self.current_epsilon
+        if do_random_action:
+            actions = []
+            for action_size in self.action_sizes:
+                action = np.zeros((action_size,))
+                action_index = np.random.randint(0, action_size)
+                action[action_index] = 1.0
+                actions.append(action)
+            actions = np.array(actions)
+        else:
+            actions = []
+            for predicted_action in prediction:
+                predicted_action = predicted_action[-1]
+                action = np.zeros((len(predicted_action),))
+                action_index = np.argmax(predicted_action)
+                action[action_index] = 1.0
+                actions.append(action)
+            actions = np.array(actions)
+
+        self.current_action = actions
+
+        for a, size in zip(actions, self.action_sizes):
+            assert len(a) == size
+
+        return actions
+
+
+    def replay_memory_via_minibatch(self):
+        """
+        See super-class.
+        """
+
+        # Sample random minibatch and unpack it.
+        minibatch = random.sample(self.replay_memory, min(len(self.replay_memory), self.minibatch_size))
+        state_batch = np.array([d[0] for d in minibatch])
+        action_batch = np.array([d[1] for d in minibatch])
+        reward_batch = np.array([d[2] for d in minibatch])
+        state_next_batch = np.array([d[3] for d in minibatch])
+        terminal_batch = np.array([d[4] for d in minibatch])
+
+        # Prepare q-values.
+        q_values = self.model.predict(state_batch)
+        q_values_next = self.model.predict(state_next_batch)
+        q_values_next_target = self.target_model.predict(state_next_batch)
+
+        for i in range(len(minibatch)):
+            for a in range(len(q_values)):
+                if terminal_batch[i] == False:
+                    argmax = np.argmax(q_values_next[a][i])
+                    q_values[a][i, np.argmax(action_batch[i][a])] = reward_batch[i] + self.gamma * q_values_next_target[a][i][argmax]
+                else:
+                    q_values[a][i, np.argmax(action_batch[i][a])] = reward_batch[i]
+
+        # Do gradient descent.
+        self.model.train_on_batch(state_batch, q_values)
+
+        # Copy weights to target net.
+        if self.number_of_iterations % self.model_copy_interval == 0:
+            self.target_model.set_weights(self.model.get_weights())
+
+        # Save the model if configured.
+        if self.save_model_automatically == True:
+            self.save_model_if_enabled()
+
+        # Save the plots if configured.
+        if self.save_plots_automatically == True:
+            self.save_plots_if_enabled()

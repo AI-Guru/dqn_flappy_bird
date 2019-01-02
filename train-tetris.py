@@ -6,11 +6,11 @@ import random
 import numpy as np
 from nes_py.wrappers import BinarySpaceToDiscreteSpaceEnv
 import gym_tetris
+import tetrisutils as utils
 import sys
 import matplotlib.pyplot as plt
 from agent import DQNAgent, DDQNAgent
 from keras import models, layers, optimizers, initializers
-import tetrisutils as utils
 import modelutils
 
 # Parameters.
@@ -58,16 +58,12 @@ def main():
 
     print("Creating game...")
     environment = gym_tetris.make('Tetris-v0')
-    #environment = BinarySpaceToDiscreteSpaceEnv(environment, actions)
 
     print("Training ...")
     train(agent, environment, verbose="verbose" in sys.argv, headless="headless" in sys.argv)
 
 
 def train(agent, environment, verbose, headless):
-
-    # Normalization.
-    observation_absolute_maximums = np.array([2.4, 3.6, 0.27, 3.3])
 
     # Initialize state.
     image_data = environment.reset()

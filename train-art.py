@@ -14,7 +14,7 @@ from agent import *
 from keras import models, layers, optimizers, initializers
 
 # Parameters.
-frames = 4
+frames = 1
 compute_custom_rewards = True
 number_of_actions = 12
 
@@ -36,17 +36,16 @@ def main():
         gamma=0.95,
         final_epsilon=0.01,
         initial_epsilon=1.0,
-        number_of_iterations=100000,
+        number_of_iterations=200000,
         replay_memory_size=2000,
         minibatch_size=32,
         model_copy_interval=256
     )
 
-    agent.enable_rewards_tracking(rewards_running_means_length=100)
-    agent.enable_episodes_tracking(episodes_running_means_length=100)
+    agent.enable_rewards_tracking(rewards_running_means_length=1000)
     agent.enable_maxq_tracking(maxq_running_means_length=1000)
-    agent.enable_model_saving(model_save_frequency=1000)
-    agent.enable_plots_saving(plots_save_frequency=1000)
+    agent.enable_model_saving(model_save_frequency=10000)
+    agent.enable_plots_saving(plots_save_frequency=10000)
 
     print("Training ...")
     train(agent, environment, verbose="verbose" in sys.argv, headless="headless" in sys.argv)

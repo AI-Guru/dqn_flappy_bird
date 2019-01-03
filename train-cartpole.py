@@ -18,7 +18,6 @@ compute_custom_rewards = True
 
 def main():
 
-
     print("Creating model...")
     model = create_model()
     model.summary()
@@ -52,8 +51,9 @@ def main():
     agent.enable_rewards_tracking(rewards_running_means_length=10000)
     agent.enable_episodes_tracking(episodes_running_means_length=100)
     agent.enable_maxq_tracking(maxq_running_means_length=10000)
-    agent.enable_model_saving(model_save_frequency=10000)
-    agent.enable_plots_saving(plots_save_frequency=10000)
+    agent.enable_tensorboard_for_tracking()
+    #agent.enable_model_saving(model_save_frequency=10000)
+    #agent.enable_plots_saving(plots_save_frequency=10000)
 
     print("Creating game...")
     environment = gym.make("CartPole-v0")

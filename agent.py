@@ -3,6 +3,7 @@ import numpy as np
 import time
 import datetime
 from keras import models
+import tensorflow as tf
 import matplotlib.pyplot as plt
 
 
@@ -108,6 +109,19 @@ class DQNAgent:
         self.maxq_running_means_array_for_plot = []
 
 
+    def enable_tensorboard_for_tracking(self):
+        """
+        Enables tensorboard for tracking.
+        """
+        self.tensorboard_writer = tf.summary.FileWriter("tensorboard")
+
+
+    def _log_scalar(self, tag, value, step):
+        tag += " (" + self.name + ")"
+        summary = tf.Summary(value=[tf.Summary.Value(tag=tag, simple_value=value)])
+        self.tensorboard_writer.add_summary(summary, step)
+
+
     def enable_model_saving(self, model_save_frequency):
         """
         Enables saving the model during training.
@@ -196,6 +210,8 @@ class DQNAgent:
             self.current_rewards_running_means = np.mean(self.rewards_array)
             if self.current_iteration % self.rewards_running_means_length == 0:
                 self.rewards_running_means_array_for_plot.append(self.current_rewards_running_means)
+                if self.tensorboard_writer:
+                    self._log_scalar("Rewards running means", self.current_rewards_running_means, self.current_iteration)
 
         # Tracking episode lengths.
         if self.track_episodes == True:
@@ -208,6 +224,8 @@ class DQNAgent:
                 self.current_episodes_running_means = np.mean(self.episodes_lengths_array)
             if self.current_iteration % self.episodes_running_means_length == 0:
                 self.episodes_running_means_array_for_plot.append(self.current_episodes_running_means)
+                if self.tensorboard_writer:
+                    self._log_scalar("Episodes running means", self.current_episodes_running_means, self.current_iteration)
 
         # Tracking max-q values.
         if self.track_maxq == True:
@@ -217,6 +235,8 @@ class DQNAgent:
             self.current_maxq_running_means = np.mean(self.maxq_array)
             if self.current_iteration % self.maxq_running_means_length == 0:
                 self.maxq_running_means_array_for_plot.append(self.current_maxq_running_means)
+                if self.tensorboard_writer:
+                    self._log_scalar("Max-Q running means", self.current_maxq_running_means, self.current_iteration)
 
 
     def replay_memory_via_minibatch(self):

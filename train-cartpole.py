@@ -12,7 +12,7 @@ from keras import models, layers, optimizers, initializers
 
 
 # Parameters.
-agent_type = "ddqn"
+agent_type = "dqn"
 compute_custom_rewards = True
 
 
@@ -22,12 +22,19 @@ def main():
     model = create_model()
     model.summary()
 
+    print("Creating environment...")
+    environment = gym.make("CartPole-v0")
+    environment._max_episode_steps = 500
+
     print("Creating agent...")
     if agent_type == "dqn":
         agent = DQNAgent(
             name="cartpole-dqn",
             model=model,
-            number_of_actions=2,
+            environment=environment,
+            observation_frames=1,
+            observation_transformation=observation_transformation,
+            reward_transformation=reward_transformation,
             gamma=0.95,
             final_epsilon=0.01,
             initial_epsilon=1.0,
@@ -39,7 +46,10 @@ def main():
         agent = DDQNAgent(
             name="cartpole-ddqn",
             model=model,
-            number_of_actions=2,
+            environment=environment,
+            observation_frames=1,
+            observation_transformation=observation_transformation,
+            reward_transformation=reward_transformation,
             gamma=0.95,
             final_epsilon=0.01,
             initial_epsilon=1.0,
@@ -49,18 +59,13 @@ def main():
             model_copy_interval=100
         )
     agent.enable_rewards_tracking(rewards_running_means_length=10000)
-    agent.enable_episodes_tracking(episodes_running_means_length=100)
+    agent.enable_episodes_tracking(episodes_running_means_length=10000)
     agent.enable_maxq_tracking(maxq_running_means_length=10000)
+    agent.enable_model_saving(model_save_frequency=100000)
     agent.enable_tensorboard_for_tracking()
-    #agent.enable_model_saving(model_save_frequency=10000)
-    #agent.enable_plots_saving(plots_save_frequency=10000)
-
-    print("Creating game...")
-    environment = gym.make("CartPole-v0")
-    environment._max_episode_steps = 500
 
     print("Training ...")
-    train(agent, environment, verbose="verbose" in sys.argv, headless="headless" in sys.argv)
+    agent.fit(verbose=True, headless="render" not in sys.argv)
 
 
 def create_model():
@@ -74,57 +79,17 @@ def create_model():
     return model
 
 
-def train(agent, environment, verbose, headless):
+def observation_transformation(observation):
+    observation = observation / np.array([2.4, 3.6, 0.27, 3.3])
+    return observation
 
-    # Normalization.
-    observation_absolute_maximums = np.array([2.4, 3.6, 0.27, 3.3])
 
-    # Initialize state.
-    state = environment.reset()
-    state = state / observation_absolute_maximums
-
-    # main infinite loop
-    iterations = agent.number_of_iterations
-    for iteration in range(iterations):
-
-        if headless == False:
-            environment.render()
-
-        # Get an action. Either random or predicted. This is epsilon greedy exploration.
-        action = agent.get_action(state)
-
-        # Get next state and reward
-        state_next, reward, terminal, _ = environment.step(np.argmax(action))
-        state_next = state_next / observation_absolute_maximums
-
-        # Compute custom rewards.
-        if compute_custom_rewards == True:
-            if terminal == True:
-                reward = -100.0
-            elif np.max(np.abs(state_next)) > 0.5:
-                reward = -20.0
-
-        # Save transition to replay memory and ensure length.
-        agent.memorize_transition(state, action, reward, state_next, terminal)
-
-        # Replay the memory.
-        agent.replay_memory_via_minibatch()
-
-        # Set state to next-state.
-        state = state_next
-
-        # Restart environment if episode is over.
-        if terminal == True:
-            state = environment.reset()
-
-        # Training output
-        verbose = True
-        if verbose:
-            status_string = ""
-            status_string += agent.get_status_string()
-            print(status_string, end="\r")
-
-    print("")
+def reward_transformation(state, reward, terminal):
+    if terminal == True:
+        reward = -100.0
+    elif np.max(np.abs(state)) > 0.5:
+        reward = -20.0
+    return reward
 
 
 if __name__ == "__main__":

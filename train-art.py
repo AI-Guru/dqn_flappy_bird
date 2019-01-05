@@ -26,7 +26,7 @@ def main():
     print("Creating model...")
     input_dimensions = [space.shape for space in environment.observation_space.spaces][0]
     output_dimensions = [space.n for space in environment.action_space.spaces]
-    model = utils.create_model(input_frames=frames, input_dimensions=input_dimensions, output_dimensions=output_dimensions, cnn_blocks=2, dense_dimensions=[])
+    model = utils.create_model(input_frames=frames, input_dimensions=input_dimensions, output_dimensions=output_dimensions, cnn_blocks=[32, 64, 128], dense_dimensions=[512])
     model.summary()
 
     print("Creating agent...")
@@ -36,7 +36,7 @@ def main():
         gamma=0.95,
         final_epsilon=0.01,
         initial_epsilon=1.0,
-        number_of_iterations=200000,
+        number_of_iterations=100000,
         replay_memory_size=2000,
         minibatch_size=32,
         model_copy_interval=256
@@ -44,8 +44,9 @@ def main():
 
     agent.enable_rewards_tracking(rewards_running_means_length=1000)
     agent.enable_maxq_tracking(maxq_running_means_length=1000)
+    agent.enable_tensorboard_for_tracking()
     agent.enable_model_saving(model_save_frequency=10000)
-    agent.enable_plots_saving(plots_save_frequency=10000)
+    #agent.enable_plots_saving(plots_save_frequency=10000)
 
     print("Training ...")
     train(agent, environment, verbose="verbose" in sys.argv, headless="headless" in sys.argv)

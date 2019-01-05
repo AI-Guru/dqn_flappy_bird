@@ -6,6 +6,7 @@ import sys
 import glob
 from keras import models
 import os
+from agent import run_model
 
 def main():
     print("Loading model...")
@@ -24,37 +25,12 @@ def main():
     environment._max_episode_steps = 500
 
     print("Running ...")
-    run(model, environment, verbose="verbose" in sys.argv)
+    run_model(model, environment, iterations=10, observation_frames=1, observation_transformation=observation_transformation, verbose=True)
 
 
-def run(model, environment, verbose):
-
-    observation_absolute_maximums = np.array([2.4, 3.6, 0.27, 3.3])
-
-    # main infinite loop
-    iterations = 10
-    for iteration in range(iterations):
-        print("Iteration:", iteration)
-
-        # Initialize.
-        action = np.array([1.0, 0.0])
-        state  = environment.reset()
-        state = state / observation_absolute_maximums
-
-        terminal = False
-        steps = 0
-        while terminal == False:
-
-            prediction = model.predict(state.reshape(1, 4))[0]
-            action = np.argmax(prediction)
-
-            # Update state.
-            state, reward, terminal, _ = environment.step(action)
-            state = state / observation_absolute_maximums
-            environment.render()
-
-            steps += 1
-        print("Run lasted for {} steps.".format(steps))
+def observation_transformation(observation):
+    observation = observation / np.array([2.4, 3.6, 0.27, 3.3])
+    return observation
 
 
 if __name__ == "__main__":

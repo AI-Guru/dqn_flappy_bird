@@ -33,6 +33,8 @@ def run(model, environment, verbose):
 
     observation_absolute_maximums = np.array([2.4, 3.6, 0.27, 3.3])
 
+    frames = int(model.inputs[0].shape[-1]) - 1
+
     # main infinite loop
     iterations = 10
     for iteration in range(iterations):
@@ -40,7 +42,7 @@ def run(model, environment, verbose):
 
         # Initialize.
         (observation_target, observation_canvas) = environment.reset()
-        state = utils.image_data_to_state(observation_target, observation_canvas, frames=4)
+        state = utils.image_data_to_state(observation_target, observation_canvas, frames=frames)
 
         terminal = False
         steps = 0

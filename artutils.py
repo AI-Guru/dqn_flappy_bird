@@ -12,8 +12,8 @@ def create_model(input_frames, input_dimensions, output_dimensions, cnn_blocks, 
     model_input = layers.Input(shape=input_dimensions + (1 + input_frames,))
 
     hidden_layer = model_input
-    for _ in range(cnn_blocks):
-        hidden_layer = layers.Conv2D(32, (3, 3), activation="relu")(hidden_layer)
+    for cnn_block in cnn_blocks:
+        hidden_layer = layers.Conv2D(cnn_block, (3, 3), activation="relu")(hidden_layer)
         hidden_layer = layers.MaxPooling2D((2, 2))(hidden_layer)
 
     latent_layer = layers.Flatten()(hidden_layer)

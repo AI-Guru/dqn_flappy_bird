@@ -6,6 +6,40 @@ from keras import models
 import tensorflow as tf
 import matplotlib.pyplot as plt
 
+# TODO test this
+def observation_to_state(observation, frames):
+    if frames == 1:
+        state = observation
+    elif len(observation.shape) == 2:
+        state = np.zeros(observation.shape + (frames,))
+        for i in range(0, frames):
+            state[:, :, i] = observation
+    else:
+        raise Exception("Unexpected shape {}!".format(observation.shape))
+    return state
+
+# TODO test this
+def update_state_with_observation(state, observation, frames):
+    if frames == 1:
+        state_next = observation
+    else:
+        state_next = np.zeros(state.shape)
+        for i in range(0, frames - 1):
+            state_next[:, : ,i] = state[:, :, i + 1]
+        state_next[:, :, frames - 1] = observation
+    return state_next
+
+# TODO test this
+def render_state(state):
+    for i in range(state.shape[-1]):
+        image_data = state[:,:, i]
+        plt.subplot(1, state.shape[-1], i + 1)
+        result = plt.imshow(image_data, cmap="gray")
+
+    plt.savefig("tetris.png")
+    plt.show()
+    plt.close()
+
 
 class DQNAgent:
     """
@@ -15,14 +49,30 @@ class DQNAgent:
     minibatch-replay against catastrophic forgetting.
     """
 
-    def __init__(self, name, model, number_of_actions, gamma, final_epsilon, initial_epsilon, number_of_iterations, replay_memory_size, minibatch_size):
+    def __init__(
+        self,
+        name,
+        environment,
+        model,
+        number_of_iterations,
+        observation_frames=4,
+        observation_transformation=None,
+        reward_transformation=None,
+        gamma=0.95,
+        final_epsilon=0.01,
+        initial_epsilon=1.0,
+        replay_memory_size=2000,
+        minibatch_size=32):
         """
         Creates a DQN-agent.
 
         Args:
             name (string): Name of the agent.
+            environment (Gym environment): Environment.
             model (keras model): A neural network.
-            number_of_actions (int): Number of actions the agent can perform.
+            number_of_iterations (int): Number of iterations during training.
+            observation_frames (int): Number of observations to store.
+            observation_transformation (function): Optional transformation for observations.
             gamma (float): Weight factor for future rewards.
             final_epsilon (float): Final value for epsilon-greedy.
             initial_epsilon (float): Initial value for epsilon-greedy.
@@ -33,21 +83,17 @@ class DQNAgent:
 
         # Constructor parameters.
         self.name = name
+        self.environment = environment
         self.model = model
-        self.number_of_actions = number_of_actions
+        self.number_of_iterations = number_of_iterations
+        self.observation_frames = observation_frames
+        self.observation_transformation = observation_transformation
+        self.reward_transformation = reward_transformation
         self.gamma = gamma
         self.final_epsilon = final_epsilon
         self.initial_epsilon = initial_epsilon
-        self.number_of_iterations = number_of_iterations
         self.replay_memory_size = replay_memory_size
         self.minibatch_size = minibatch_size
-
-        # Additional variables.
-        self.start_time = time.time()
-        self.replay_memory = []
-        self.current_iteration = 0
-        self.epsilon_decrements = np.linspace(self.initial_epsilon, self.final_epsilon, self.number_of_iterations)
-        self.model_save_frequency = None
 
         # Additional functions. See below.
         self.track_rewards = False
@@ -55,6 +101,10 @@ class DQNAgent:
         self.track_maxq = False
         self.save_model_automatically = False
         self.save_plots_automatically = False
+        self.model_save_frequency = None
+        self.tensorboard_writer = False
+        # TODO render states to tensorboard
+
 
 
     def enable_rewards_tracking(self, rewards_running_means_length):
@@ -144,6 +194,70 @@ class DQNAgent:
 
         self.save_plots_automatically = True
         self.plots_save_frequency = plots_save_frequency
+
+
+    def fit(self, verbose=True, headless=False, render_states=False):
+
+        #  TODO:
+        self.number_of_actions = int(self.model.outputs[0].shape[-1])
+
+        # Additional variables.
+        self.start_time = time.time()
+        self.replay_memory = []
+        self.current_iteration = 0
+        self.epsilon_decrements = np.linspace(self.initial_epsilon, self.final_epsilon, self.number_of_iterations)
+
+        # Initialize state.
+        observation = self.environment.reset()
+        if self.observation_transformation != None:
+            observation = self.observation_transformation(observation)
+        state = observation_to_state(observation, frames=self.observation_frames)
+
+        # main infinite loop
+        for iteration in range(self.number_of_iterations):
+
+            if headless == False:
+                self.environment.render()
+
+            # Get an action. Either random or predicted. This is epsilon greedy exploration.
+            action = self.get_action(state)
+            action = np.argmax(action)
+
+            # Get next state and reward
+            observation_next, reward, terminal, _ = self.environment.step(action)
+            if self.observation_transformation != None:
+                observation_next = self.observation_transformation(observation_next)
+            state_next = update_state_with_observation(state, observation_next, frames=self.observation_frames)
+            if self.reward_transformation != None:
+                reward = self.reward_transformation(observation, reward, terminal)
+
+            # Save transition to replay memory and ensure length.
+            self.memorize_transition(state, action, reward, state_next, terminal)
+
+            # Replay the memory.
+            self.replay_memory_via_minibatch()
+
+            # Set state to next-state.
+            state = state_next
+
+            # Restart environment if episode is over.
+            if terminal == True:
+                observation = self.environment.reset()
+                if self.observation_transformation != None:
+                    observation = self.observation_transformation(observation)
+                state = observation_to_state(observation, frames=self.observation_frames)
+
+            # Training output
+            if verbose:
+                status_string = ""
+                status_string += self.get_status_string()
+                print(status_string, end="\r")
+
+            # Render states.
+            if render_states  == True:
+                render_state(state)
+
+        print("")
 
 
     def get_action(self, state):
@@ -375,7 +489,21 @@ class DDQNAgent(DQNAgent):
     heavy use of a target net in order to make the solution more stable
     """
 
-    def __init__(self, name, model, number_of_actions, gamma, final_epsilon, initial_epsilon, number_of_iterations, replay_memory_size, minibatch_size, model_copy_interval):
+    def __init__(
+        self,
+        name,
+        environment,
+        model,
+        number_of_iterations,
+        observation_frames=4,
+        observation_transformation=None,
+        reward_transformation=None,
+        gamma=0.95,
+        final_epsilon=0.01,
+        initial_epsilon=1.0,
+        replay_memory_size=2000,
+        minibatch_size=32,
+        model_copy_interval=256):
         """
         Creates a DDQN-agent.
 
@@ -386,7 +514,7 @@ class DDQNAgent(DQNAgent):
             model_copy_interval (int): Interval of how often to copy the weights.
         """
 
-        super().__init__(name, model, number_of_actions, gamma, final_epsilon, initial_epsilon, number_of_iterations, replay_memory_size, minibatch_size)
+        super().__init__(name, environment, model, number_of_iterations, observation_frames, observation_transformation, reward_transformation, gamma, final_epsilon, initial_epsilon, replay_memory_size, minibatch_size)
 
         self.model_copy_interval = model_copy_interval
         self.target_model = models.clone_model(self.model)
@@ -547,3 +675,36 @@ class DQNAgentSpecial(DQNAgent):
         # Save the plots if configured.
         if self.save_plots_automatically == True:
             self.save_plots_if_enabled()
+
+
+def run_model(model, environment, iterations, observation_transformation, observation_frames, verbose):
+
+    # main infinite loop
+    for iteration in range(iterations):
+        print("Iteration:", iteration)
+
+        # Initialize.
+        observation  = environment.reset()
+        if observation_transformation != None:
+            observation = observation_transformation(observation)
+        state = observation_to_state(observation, frames=observation_frames)
+
+        terminal = False
+        steps = 0
+        while terminal == False:
+
+            # Predict q-values.
+            prediction = model.predict(np.expand_dims(state, axis=0))[0]
+            action = np.argmax(prediction)
+
+            # Update state.
+            observation, reward, terminal, _ = environment.step(action)
+            if observation_transformation != None:
+                observation = observation_transformation(observation)
+            state = update_state_with_observation(state, observation, frames=observation_frames)
+
+            # Render.
+            environment.render()
+
+            steps += 1
+        print("Run lasted for {} steps.".format(steps))

@@ -1,3 +1,5 @@
+import warnings
+warnings.filterwarnings("ignore")
 from PIL import Image
 import numpy as np
 import gym
@@ -15,30 +17,41 @@ from collections import deque
 
 INPUT_SHAPE = (84, 84)
 WINDOW_LENGTH = 4
-env_name = "FlappyBird-v0"
+
 
 class FlappyBirdProcessor(Processor):
+    """
+    Transforms observations, state-batches and rewards of
+    Flappy-Bird.
+    """
 
     def process_observation(self, observation):
-        assert observation.ndim == 3  # (height, width, channel)
+        """
+        Takes an observation, resizes it and turns it into greyscale.
+        """
         img = Image.fromarray(observation)
-        img = img.resize(INPUT_SHAPE).convert('L')  # resize and convert to grayscale
+        img = img.resize(INPUT_SHAPE).convert('L')
         processed_observation = np.array(img)
-        assert processed_observation.shape == INPUT_SHAPE
-        return processed_observation.astype('uint8')  # saves storage in experience memory
+        return processed_observation.astype('uint8')
 
     def process_state_batch(self, batch):
-        # We could perform this processing step in `process_observation`. In this case, however,
-        # we would need to store a `float32` array instead, which is 4x more memory intensive than
-        # an `uint8` array. This matters if we store 1M observations.
+        """
+        Normalizes a batch of observations.
+        """
         processed_batch = batch.astype('float32') / 255.
         return processed_batch
 
     def process_reward(self, reward):
+        """
+        Clips the rewards.
+        """
         return np.clip(reward, -1., 1.)
 
 
 class TensorboardCallback(Callback):
+    """
+    Provides logging in TensorBoard.
+    """
 
     def __init__(self, log_interval=1000, reward_buffer_length=10000, episode_duration_buffer_length=10000):
         self.log_interval = log_interval
@@ -52,6 +65,9 @@ class TensorboardCallback(Callback):
         self.tensorboard_writer = tf.summary.FileWriter("tensorboard", flush_secs=5)
 
     def on_step_end(self, step, logs={}):
+        """
+        Logs data if log-interval exceeded.
+        """
         self.running_data["reward"].append(logs["reward"])
 
         if self.iterations % self.log_interval == 0:
@@ -63,29 +79,29 @@ class TensorboardCallback(Callback):
         self.iterations += 1
 
     def on_episode_end(self, step, logs={}):
+        """
+        Logs the duration of the episode.
+        """
         self.running_data["episode_duration"].append(logs["nb_episode_steps"])
 
     def _log_scalar(self, tag, value, step):
+        """
+        Accesses tensorbord to log a value.
+        """
         summary = tf.Summary(value=[tf.Summary.Value(tag=tag, simple_value=value)])
         self.tensorboard_writer.add_summary(summary, step)
+
 
 def main():
 
     # Get the environment and extract the number of actions.
-    env = gym.make(env_name)
+    environment_name = "FlappyBird-v0"
+    environment = gym.make(environment_name)
     np.random.seed(666)
-    nb_actions = env.action_space.n
+    nb_actions = environment.action_space.n
 
-    # Next, we build our model. We use the same model that was described by Mnih et al. (2015).
-    input_shape = (WINDOW_LENGTH,) + INPUT_SHAPE
-    model = models.Sequential()
-    model.add(layers.Permute((2, 3, 1), input_shape=input_shape))
-    model.add(layers.Convolution2D(32, (8, 8), strides=(4, 4), activation="relu"))
-    model.add(layers.Convolution2D(64, (4, 4), strides=(2, 2), activation="relu"))
-    model.add(layers.Convolution2D(64, (3, 3), strides=(1, 1), activation="relu"))
-    model.add(layers.Flatten())
-    model.add(layers.Dense(512, activation="relu"))
-    model.add(layers.Dense(nb_actions, activation="linear"))
+    # Build the model.
+    model = build_model((WINDOW_LENGTH,) + INPUT_SHAPE, nb_actions)
     print(model.summary())
 
     # Finally, we configure and compile our agent. You can use every built-in Keras optimizer and
@@ -112,22 +128,34 @@ def main():
                    train_interval=4, delta_clip=1.)
     dqn.compile(optimizers.Adam(lr=.00025), metrics=['mae'])
 
-    weights_filename = 'dqn_{}_weights.h5f'.format(env_name)
+    weights_filename = 'dqn_{}_weights.h5f'.format(environment_name)
 
     # Okay, now it's time to learn something! We capture the interrupt exception so that training
     # can be prematurely aborted. Notice that now you can use the built-in Keras callbacks!
-    checkpoint_weights_filename = 'dqn_' + env_name + '_weights_{step}.h5f'
-    log_filename = 'dqn_{}_log.json'.format(env_name)
+    checkpoint_weights_filename = 'dqn_' + environment_name + '_weights_{step}.h5f'
+    log_filename = 'dqn_{}_log.json'.format(environment_name)
     callbacks = [ModelIntervalCheckpoint(checkpoint_weights_filename, interval=250000)]
     callbacks += [TensorboardCallback()]
     callbacks += [FileLogger(log_filename, interval=100)]
-    dqn.fit(env, callbacks=callbacks, nb_steps=1750000, log_interval=10000)
+    dqn.fit(environment, callbacks=callbacks, nb_steps=1750000, log_interval=10000)
 
     # After training is done, we save the final weights one more time.
     dqn.save_weights(weights_filename, overwrite=True)
 
     # Finally, evaluate our algorithm for 10 episodes.
-    dqn.test(env, nb_episodes=10, visualize=False)
+    dqn.test(environment, nb_episodes=10, visualize=False)
+
+def build_model(input_shape, actions):
+    model = models.Sequential()
+    model.add(layers.Permute((2, 3, 1), input_shape=input_shape))
+    model.add(layers.Convolution2D(32, (8, 8), strides=(4, 4), activation="relu"))
+    model.add(layers.Convolution2D(64, (4, 4), strides=(2, 2), activation="relu"))
+    model.add(layers.Convolution2D(64, (3, 3), strides=(1, 1), activation="relu"))
+    model.add(layers.Flatten())
+    model.add(layers.Dense(512, activation="relu"))
+    model.add(layers.Dense(actions, activation="linear"))
+    return model
+
 
 if __name__ == "__main__":
     main()

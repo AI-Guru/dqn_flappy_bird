@@ -5,14 +5,12 @@ import numpy as np
 import gym
 import gym_ple
 from keras import models, layers, optimizers
-#import keras.backend as K
 from rl.agents.dqn import DQNAgent
 from rl.policy import LinearAnnealedPolicy, BoltzmannQPolicy, EpsGreedyQPolicy
 from rl.memory import SequentialMemory
 from rl.core import Processor
-from rl.callbacks import FileLogger, ModelIntervalCheckpoint, Callback
-import tensorflow as tf
-from collections import deque
+from rl.callbacks import FileLogger, ModelIntervalCheckpoint
+from kerasrl_extensions import *
 
 
 INPUT_SHAPE = (84, 84)
@@ -46,50 +44,6 @@ class FlappyBirdProcessor(Processor):
         Clips the rewards.
         """
         return np.clip(reward, -1., 1.)
-
-
-class TensorboardCallback(Callback):
-    """
-    Provides logging in TensorBoard.
-    """
-
-    def __init__(self, log_interval=1000, reward_buffer_length=10000, episode_duration_buffer_length=10000):
-        self.log_interval = log_interval
-
-        self.iterations = 0
-
-        self.running_data = {}
-        self.running_data["reward"] = deque([], maxlen=reward_buffer_length)
-        self.running_data["episode_duration"] = deque([], maxlen=episode_duration_buffer_length)
-
-        self.tensorboard_writer = tf.summary.FileWriter("tensorboard", flush_secs=5)
-
-    def on_step_end(self, step, logs={}):
-        """
-        Logs data if log-interval exceeded.
-        """
-        self.running_data["reward"].append(logs["reward"])
-
-        if self.iterations % self.log_interval == 0:
-            for key, values in self.running_data.items():
-                if len(values) > 0:
-                    mean = np.mean(values)
-                    self._log_scalar(key + "-mean", mean, self.iterations)
-
-        self.iterations += 1
-
-    def on_episode_end(self, step, logs={}):
-        """
-        Logs the duration of the episode.
-        """
-        self.running_data["episode_duration"].append(logs["nb_episode_steps"])
-
-    def _log_scalar(self, tag, value, step):
-        """
-        Accesses tensorbord to log a value.
-        """
-        summary = tf.Summary(value=[tf.Summary.Value(tag=tag, simple_value=value)])
-        self.tensorboard_writer.add_summary(summary, step)
 
 
 def main():

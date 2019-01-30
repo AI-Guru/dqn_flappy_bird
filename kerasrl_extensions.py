@@ -17,7 +17,7 @@ class TensorboardCallback(Callback):
 
         self.running_data = {}
         self.running_data["reward"] = deque([], maxlen=reward_buffer_length)
-        self.running_data["episode_duration"] = deque([], maxlen=episode_duration_buffer_length)
+        #self.running_data["episode_duration"] = deque([], maxlen=episode_duration_buffer_length)
 
         self.tensorboard_writer = tf.summary.FileWriter("tensorboard", flush_secs=5)
 
@@ -39,7 +39,12 @@ class TensorboardCallback(Callback):
         """
         Logs the duration of the episode.
         """
-        self.running_data["episode_duration"].append(logs["nb_episode_steps"])
+        #self.running_data["episode_duration"].append(logs["nb_episode_steps"])
+
+        for key, value in logs.items():
+            if key not in self.running_data.keys():
+                self.running_data[key] = []
+            self.running_data[key].append(logs[key])
 
     def _log_scalar(self, tag, value, step):
         """

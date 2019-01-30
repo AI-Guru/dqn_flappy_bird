@@ -2,14 +2,12 @@ import warnings
 warnings.filterwarnings("ignore")
 import numpy as np
 import gym
-import gym_duckietown
-from gym_duckietown.wrappers import DiscreteWrapper
 from keras import optimizers
 from rl.agents.dqn import DQNAgent
 from rl.memory import SequentialMemory
 from rl.core import Processor
 import sys
-from duckietown_kerasrl_train import DuckieTownProcessor, build_model
+from carracing_kerasrl_train import CarRacingProcessor, CarRacingDiscreteWrapper, build_model
 
 
 INPUT_SHAPE = (84, 84)
@@ -27,7 +25,7 @@ def main():
     # Get the environment and extract the number of actions.
     environment_name = weights_filename.split("_")[1] #"Duckietown-straight_road-v0"
     environment = gym.make(environment_name)
-    environment = DiscreteWrapper(environment)
+    environment = CarRacingDiscreteWrapper(environment)
     np.random.seed(666)
     nb_actions = environment.action_space.n
 
@@ -39,7 +37,7 @@ def main():
     memory = SequentialMemory(limit=1000000, window_length=WINDOW_LENGTH) # TODO Why is this necessary?
 
     # Create the processor.
-    processor = DuckieTownProcessor()
+    processor = CarRacingProcessor()
 
     # Create the DQN-Agent.
     dqn = DQNAgent(

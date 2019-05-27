@@ -8,19 +8,14 @@ from rl.memory import SequentialMemory
 from rl.core import Processor
 import sys
 from lunarlander_kerasrl_train import create_environment, build_model
+import glob
 
 
 INPUT_SHAPE = (84, 84)
 WINDOW_LENGTH = 4
 
 
-def main():
-
-    # Process weights filename.
-    if len(sys.argv) != 2:
-        print("Must provide weights file-name.")
-        exit(0)
-    weights_filename = sys.argv[1]
+def run(weights_filename, nb_episodes):
 
     # Create environment and model.
     environment_name = weights_filename.split("_")[2]
@@ -49,9 +44,27 @@ def main():
     # Load the weights.
     dqn.load_weights(weights_filename)
 
+    print("Testing:", weights_filename)
+
     # Test the agent.
-    dqn.test(environment, nb_episodes=10, visualize=True)
+    dqn.test(environment, nb_episodes=nb_episodes, visualize=True)
 
 
 if __name__ == "__main__":
-    main()
+    paths = []
+    paths.append("duel_dqn_LunarLander-v2_initial_weights.h5f")
+    paths.append("duel_dqn_LunarLander-v2_weights_10000.h5f")
+    paths.append("duel_dqn_LunarLander-v2_weights_20000.h5f")
+    #paths.append("duel_dqn_LunarLander-v2_weights_30000.h5f")
+    paths.append("duel_dqn_LunarLander-v2_weights_40000.h5f")
+    #paths.append("duel_dqn_LunarLander-v2_weights_50000.h5f")
+    #paths.append("duel_dqn_LunarLander-v2_weights_60000.h5f")
+    #paths.append("duel_dqn_LunarLander-v2_weights_70000.h5f")
+    paths.append("duel_dqn_LunarLander-v2_weights_80000.h5f")
+    #paths.append("duel_dqn_LunarLander-v2_weights_90000.h5f")
+    paths.append("duel_dqn_LunarLander-v2_weights_100000.h5f")
+    paths.append("duel_dqn_LunarLander-v2_weights.h5f")
+
+    for path in paths:
+        run(path, 2)
+    #main()

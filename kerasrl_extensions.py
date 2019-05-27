@@ -10,7 +10,7 @@ class TensorboardCallback(Callback):
     Provides logging in TensorBoard.
     """
 
-    def __init__(self, log_interval=1000, reward_buffer_length=10000, episode_duration_buffer_length=10000):
+    def __init__(self, path="tensorboard", log_interval=1000, reward_buffer_length=10000, episode_duration_buffer_length=10000):
         self.log_interval = log_interval
 
         self.iterations = 0
@@ -19,7 +19,7 @@ class TensorboardCallback(Callback):
         self.running_data["reward"] = deque([], maxlen=reward_buffer_length)
         #self.running_data["episode_duration"] = deque([], maxlen=episode_duration_buffer_length)
 
-        self.tensorboard_writer = tf.summary.FileWriter("tensorboard", flush_secs=5)
+        self.tensorboard_writer = tf.summary.FileWriter(path, flush_secs=5)
 
     def on_step_end(self, step, logs={}):
         """
